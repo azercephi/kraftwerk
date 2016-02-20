@@ -1,0 +1,8 @@
+1) Make it work for .json filenames
+
+3) make sure we beat TA-degree
+
+
+4) Try spectral clustering - how clustered?
+	pick 'best' node (highest degree?) in every? cluster
+	

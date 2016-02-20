@@ -22,9 +22,9 @@ def write_seeds(filename, seeds):
 	"""
 	outstr =  ''
 	
-	for seed_row in seeds:
-		for seed in seed_row:
-			outstr +=str(seed)+'\n'
+	#for seed_row in seeds:
+	for seed in seeds:
+		outstr +=str(seed)+'\n'
 
 	with open('seeds/'+filename,'w') as f:
 		f.write(outstr[:-1])
@@ -61,30 +61,41 @@ def get_seeds(filename, G, n, runtime):
 	
 	top_deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	#write_seeds(filename+'top_deg', top_deg[0:2*n] * 50)
-
-
-	print top_deg
+	top_nodes = [x[0] for x in top_deg]
 	
 	
-	seeds = gen_weighted_samples(top_deg, 3, n)
-	write_seeds(filename+'weighted_top_deg', seeds)
+	seeds = top_nodes[0:n-1]
 	
+	for edge in G.edges(top_nodes[0]):
+		if edge[1] not in seeds:
+			 seeds.append(edge[1])
+			 break
+	 
+	
+	write_seeds(filename+'top_beatdeg', seeds*50)
 	exit(1)
+
+	
+	write_seeds(filename+'unweighted_top_deg', top_nodes)
+	
+	#seeds = gen_weighted_samples(top_deg, 3, n)
+	#write_seeds(filename+'weighted_top_deg', seeds)
+	
+	
 	
 	print runtime - time.clock()
 
-	"""
+
 	partition = community.best_partition(G)
-	print partition	
-	g = list(nx.connected_component_subgraphs(G))	
-	draw(g[0])
-	"""
+	#print partition	
+	#g = list(nx.connected_component_subgraphs(G))	
+	#draw(g[0])
 	
 	print runtime - time.clock()
 
 	print 'computing betweness centrality'
 	bet = nx.betweenness_centrality(G)
-	top_bet = sorted(bet, key=bet.get, reverse=True)[0:2*n]
+	top_bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	
 	seeds = gen_weighted_samples(top_bet, 3, n)
 	write_seeds(filename+'weighted_top_bet', seeds)
@@ -94,7 +105,7 @@ def get_seeds(filename, G, n, runtime):
 	
 	print 'computing closeness centrality'
 	close = nx.closeness_centrality(G)
-	top_close = sorted(close, key=close.get, reverse=True)[0:2*n]
+	top_close = sorted(close.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	seeds = gen_weighted_samples(top_close, 3, n)
 	write_seeds(filename+'weighted_top_close', seeds)
 	
@@ -154,6 +165,9 @@ def generate_graphs():
 	"""
 	Generates sample graphs for testing
 	"""
+	#er=nx.erdos_renyi_graph(1000, 0.05)
+
+	
 	ws=nx.watts_strogatz_graph(3000,3,0.1)
 	save(ws, 'WS_3000_3_01', 2, 10)
 	draw(ws)
@@ -165,8 +179,7 @@ def generate_graphs():
 	red=nx.random_lobster(1000,0.9,0.10)
 	save(red, 'LOB_1000_09', 2, 10)
 	draw(red)
-	
-	
+		
 	exit(1)
 	
 

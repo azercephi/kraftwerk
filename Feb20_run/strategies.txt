@@ -1,0 +1,10 @@
+On all graphs, we used top $n-1$ degree nodes, and one node adjacent to the
+node of highest degree that wasn't a previously selected node.
+
+2.10.10 [TA GRAPH] This TA will pick the nodes with the highest degree!
+2.10.20 [TA GRAPH] This TA will get to pick fewer seed nodes.
+2.10.30 [TA GRAPH] This TA will pick nodes by 'eyeballing' the graph.
+
+
+
+
