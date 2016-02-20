@@ -47,9 +47,13 @@ Possible Errors:
 from collections import Counter, OrderedDict
 from copy import deepcopy
 from random import randint
+import sys
+import json
+import networkx as nx
+from seeder import draw_dict
 
 
-def run(adj_list, node_mappings):
+def run(filename, adj_list, node_mappings):
   """
   Function: run
   -------------
@@ -59,11 +63,11 @@ def run(adj_list, node_mappings):
   node_mappings: A dictionary where the key is a name and the value is a list
                  of seed nodes associated with that name.
   """
-  results = run_simulation(adj_list, node_mappings)
+  results = run_simulation(filename, adj_list, node_mappings)
   return results
 
 
-def run_simulation(adj_list, node_mappings):
+def run_simulation(filename, adj_list, node_mappings):
   """
   Function: run_simulation
   ------------------------
@@ -86,6 +90,10 @@ def run_simulation(adj_list, node_mappings):
   nodes = adj_list.keys()
   while not is_stable(generation, randint(100, 200), prev, node_color):
     prev = deepcopy(node_color)
+    
+    # Draw graph
+    draw_dict(filename+'_iter_'+str(generation), prev, adj_list)
+    
     for node in nodes:
       (changed, color) = update(adj_list, prev, node)
       # Store the node's new color only if it changed.
@@ -167,4 +175,25 @@ def get_result(colors, node_color):
 
 
 if __name__ == '__main__':
-  print USAGE
+	
+	graph = ''
+	gfile = sys.argv[1]
+	with open(gfile, 'r') as f:			
+		graph = ''.join([line.strip() for line in f.readlines()])
+	
+	s1file = sys.argv[2]
+	with open(s1file, 'r') as s1:			
+		strategy1 = s1.readlines()[0][1:-1].split(',')
+		
+	s2file = sys.argv[3]
+	with open(s2file, 'r') as s2:			
+		strategy2 = s2.readlines()[0][1:-1].split(',')
+	
+	graph = json.loads(graph)
+		
+	nodes = {s1file: strategy1, s2file: strategy2}	
+	results = run(gfile, graph, nodes)
+	print results
+	
+	
+	#print USAGE

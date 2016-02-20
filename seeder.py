@@ -1,6 +1,7 @@
 '''
 Main file for Pandemaniac
 Parses JSON graph adjacecy file into networkx and produces seed nodes.
+
 '''
 
 import json, sys
@@ -12,6 +13,7 @@ import heapq
 import time
 import community # sudo pip install python-louvain
 from operator import itemgetter
+from math import sqrt
 
 
 ROUNDS = 50 # Number of rounds in a game
@@ -28,6 +30,13 @@ def write_seeds(filename, seeds):
 
 	with open('seeds/'+filename,'w') as f:
 		f.write(outstr[:-1])
+		
+def write_strategy(filename, seeds):
+	"""
+	Writes strategy as list for use in sim.py
+	"""
+	with open('strategy/'+filename,'w') as f:
+		f.write(str('['+','.join(seeds)+']')) # gets rid of l=[u'1',u'2'] unicode
 		
 def gen_weighted_samples(values, power, n):
 	"""
@@ -48,7 +57,7 @@ def gen_weighted_samples(values, power, n):
 		sample = np.random.choice(nodes, n, p=weights, replace=False)
 		seeds.append(sorted(sample))
 		
-	return seeds		
+	return seeds
 
 def get_seeds(filename, G, n, runtime):
 	"""
@@ -64,19 +73,19 @@ def get_seeds(filename, G, n, runtime):
 	top_nodes = [x[0] for x in top_deg]
 	
 	
+	# Cancel top $n-1$ nodes from TA-degree
 	seeds = top_nodes[0:n-1]
 	
+	# Add node adjacent to node of highest degree
 	for edge in G.edges(top_nodes[0]):
 		if edge[1] not in seeds:
 			 seeds.append(edge[1])
-			 break
-	 
+			 break	 
 	
 	write_seeds(filename+'top_beatdeg', seeds*50)
-	exit(1)
-
-	
-	write_seeds(filename+'unweighted_top_deg', top_nodes)
+	write_strategy(filename+'top_beatdeg', seeds)	
+	write_strategy(filename+'unweighted_top_deg', top_nodes[0:n])
+	return
 	
 	#seeds = gen_weighted_samples(top_deg, 3, n)
 	#write_seeds(filename+'weighted_top_deg', seeds)
@@ -114,10 +123,81 @@ def get_seeds(filename, G, n, runtime):
 	
 def draw(G):
 	"""
-	Draws a graph using networkx
+	Draws a networkx graph object
 	"""
 	nx.draw(G, pos=nx.spring_layout(G), node_size=100, with_labels=False)
 	plt.show()
+	
+def draw_dict(filename, colors, adjlist):
+	"""
+	Draws a graph with dict 'colors': {nodeid: color, nodeid:color}
+	and adjacency list 'adjlist': {nodeid: [nodeid, nodeid, ...], ...}
+	
+	"""
+	plt.figure()
+	# to make graph object consistent across function calls
+	nodes = sorted(adjlist.keys()) 
+	pos = {}
+	deg = dict.fromkeys(nodes, 0) # Dict with 0 values
+	
+	G = nx.Graph()
+	# generate graph by adding edges
+	for node1 in nodes:
+		# if there are outgoing edges
+		if adjlist[node1]:
+			for node2 in adjlist[node1]:
+				G.add_edge(str(node1), str(node2), {'weight':10})
+				deg[node1] += 1
+	
+	
+	#pos=nx.spectral_layout(G, scale=2) # positions for nodes
+	#pos=nx.circular_layout(G, scale=2) # positions for nodes
+	
+	# Lattice structure for nodes
+	N = int(sqrt(len(nodes)))
+	scale = 3
+	pos = {}
+	for node in nodes:
+		pos[node] = [scale * (int(node) % N), scale * (int(node) / N)]	
+		
+	# list of strategy names
+	colornames = sorted(list(set([x for x in colors.values() if x is not None])))
+	
+	blue = []
+	nocolor= []
+	red = [str(x) for x in colors if colors[x] == colornames[0]]
+	if len(colornames) > 1:
+		blue = [str(x) for x in colors if colors[x] == colornames[1]]
+		nocolor = [str(x) for x in colors if (colors[x] != colornames[0] and \
+			colors[x] != colornames[1])]
+	
+	if len(colornames) > 1:
+		nx.draw_networkx_nodes(G,pos, nodelist=red, node_color='r',
+			node_size=100, alpha=0.8)
+		nx.draw_networkx_nodes(G,pos, nodelist=blue, node_color='blue', \
+			node_size=100, alpha=0.8)
+			
+	else: # only one color, use unique color
+		nx.draw_networkx_nodes(G,pos, nodelist=red, node_color='g',
+			node_size=100, alpha=0.8)		
+	nx.draw_networkx_nodes(G,pos, nodelist=nocolor, node_color='white', \
+		node_size=100, alpha=0.8)
+     
+	nx.draw_networkx_edges(G,pos,width=0.5,alpha=0.5)
+	
+	nx.draw_networkx_labels(G,pos,deg,font_size=6)
+		
+	
+	#plt.show()
+	
+	if len(colornames) > 1:
+		plt.xlabel('red='+str(colornames[0]))
+		plt.ylabel('blue='+str(colornames[1]))
+	else:
+		plt.xlabel('green='+str(colornames[0]))
+	plt.savefig('figs/'+filename+'.png')
+	
+
 
 def makeGraphFromJSON(filename):
 	"""
@@ -201,22 +281,22 @@ if __name__ == "__main__":
 		
 		# make sure it's a json file
 		try:
-			num_players, num_seeds, id = filename.split('.')
-			num_players = int(num_players)
-			num_seeds = int(num_seeds)
+			split = filename.split('.')
+			num_players = int(split[0])
+			num_seeds = int(split[1])
+			id = split[2:]
 		except ValueError:
-			print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id"
+			print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
 			exit(1)
 		# read it in as networkx graph
 		try:
 			G = makeGraphFromJSON(filename)
 		except IOError:
-			print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id"
+			print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
 			print >> sys.stderr, "    input must be valid json file format"
 			sys.exit(1)
 		
-		seeds = get_seeds(filename+'.seeds.', G, num_seeds, runtime - (time.clock() - now))
-		
+		seeds = get_seeds(filename+'.seeds.', G, num_seeds, runtime - (time.clock() - now))		
 
 		# visualize
 		draw(G)
