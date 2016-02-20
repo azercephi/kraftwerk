@@ -14,6 +14,12 @@ import time
 import community # sudo pip install python-louvain
 from operator import itemgetter
 from math import sqrt
+from networkx.algorithms import approximation as apxa
+
+from parallel_betweenness_centrality import betweenness_centrality_parallel
+from parallel_closeness_centrality import closeness_centrality_parallel
+
+
 
 
 ROUNDS = 50 # Number of rounds in a game
@@ -64,60 +70,96 @@ def get_seeds(filename, G, n, runtime):
 	Generate n seeds for networkx graph object G using at most 'runtime' seconds
 	"""	
 		
+	print runtime - time.clock()	
+
+	'''
+	####################################################################
+	# Strategy: use components to find more important regions of graph
+	k_components = apxa.k_components(G)
+		
+	print runtime - time.clock()	
+	#print len(list(large_comp[0])), len(G.nodes())
+	
+	print k_components
+	
+	for k in [1,2,3,4,5,6,7,8,9,10]:
+		if k <= len(k_components):
+			subnodes = list(k_components[k-1][0])
+			if len(subnodes) >= n: # Don't want tiny subcomponent
+				subG = G.subgraph()			
+				draw_subgraph(G, subG)
+				
+				print 'computing large '+str(k)+'subgraph closeness centrality'
+				subclose = nx.closeness_centrality(subG)
+				top_subclose = sorted(subclose.items(),key=itemgetter(1), reverse=True)
+				#seeds = gen_weighted_samples(top_subclose, 3, n)
+				#write_seeds(filename+'weighted_top_close', seeds)	
+				top_subclose_nodes = [x[0] for x in top_subclose]	
+				write_strategy(filename+'top_sub'+str(k)+'close', top_subclose_nodes[0:n])
+	####################################################################
+	'''
+		
+	
+	# Use partitions?
+	#partition = community.best_partition(G)
+	#print partition	
+	#g = list(nx.connected_component_subgraphs(G))	
+	#draw(g[0])
+		
+	
+	####################################################################
+	# Strategy: Use degree (simulates TA-degree)
 	deg = nx.degree(G)	
-	# Not actually faster up to 5000 nodes.
-	#top_deg = heapq.nlargest(10,deg, key=lambda k:deg[k])
-	
+	# Not actually faster up to 5000 nodes.	
 	top_deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	#write_seeds(filename+'top_deg', top_deg[0:2*n] * 50)
+	top_close_nodes = [x[0] for x in top_deg]	
+	write_seeds(filename+'unweighted_top_deg', top_deg[0:n] * 50)	
+	write_strategy(filename+'unweighted_top_deg',  top_close_nodes[0:n])	
 	top_nodes = [x[0] for x in top_deg]
+	####################################################################
+			
 	
-	
-	# Cancel top $n-1$ nodes from TA-degree
+	'''
+	####################################################################
+	# Strategy: Cancel top $n-1$ nodes from TA-degree
 	seeds = top_nodes[0:n-1]
 	
 	# Add node adjacent to node of highest degree
 	for edge in G.edges(top_nodes[0]):
 		if edge[1] not in seeds:
 			 seeds.append(edge[1])
-			 break	 
-	
+			 break	
 	write_seeds(filename+'top_beatdeg', seeds*50)
 	write_strategy(filename+'top_beatdeg', seeds)	
 	write_strategy(filename+'unweighted_top_deg', top_nodes[0:n])
-	return
+	####################################################################
+	'''
+	print runtime - time.clock()	
 	
-	#seeds = gen_weighted_samples(top_deg, 3, n)
-	#write_seeds(filename+'weighted_top_deg', seeds)
-	
-	
-	
-	print runtime - time.clock()
-
-
-	partition = community.best_partition(G)
-	#print partition	
-	#g = list(nx.connected_component_subgraphs(G))	
-	#draw(g[0])
-	
-	print runtime - time.clock()
-
-	print 'computing betweness centrality'
-	bet = nx.betweenness_centrality(G)
-	top_bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	
-	seeds = gen_weighted_samples(top_bet, 3, n)
-	write_seeds(filename+'weighted_top_bet', seeds)
-	
-	print runtime - time.clock()
-
-	
+	####################################################################
+	# Strategy: Use closenss centrality
 	print 'computing closeness centrality'
 	close = nx.closeness_centrality(G)
 	top_close = sorted(close.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	seeds = gen_weighted_samples(top_close, 3, n)
-	write_seeds(filename+'weighted_top_close', seeds)
-	
+	write_seeds(filename+'weighted_top_close', seeds)	
+	top_close_nodes = [x[0] for x in top_close]	
+	write_strategy(filename+'top_close', top_close_nodes[0:n])
+	####################################################################	
+	print runtime - time.clock()
+
+
+	####################################################################
+	# Strategy: Use bewteenness centrality
+	print 'computing betweness centrality'
+	bet = nx.betweenness_centrality(G)
+	top_bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	top_bet_nodes = [x[0] for x in top_bet]	
+	seeds = gen_weighted_samples(top_bet, 3, n)
+	write_seeds(filename+'weighted_top_bet', seeds)	
+	write_strategy(filename+'top_bet', top_bet_nodes[0:n])
+	####################################################################
+		
 	print runtime - time.clock()
 
 	
@@ -125,8 +167,47 @@ def draw(G):
 	"""
 	Draws a networkx graph object
 	"""
-	nx.draw(G, pos=nx.spring_layout(G), node_size=100, with_labels=False)
+	plt.figure()	
+	nodes = G.nodes()
+	N = int(sqrt(len(nodes)))
+	scale = 3
+	pos = {}
+	for node in nodes:
+		pos[node] = [scale * (int(node) % N), scale * (int(node) / N)]
+		
+	nx.draw(G, pos, node_size=100, with_labels=False)
 	plt.show()
+	
+def draw_subgraph(G, nodes):
+	"""
+	Draws the subgraph of networkx graph object G specified by list of
+	nodes
+	"""
+	plt.figure()
+	all_nodes = sorted(G.nodes()) 
+	pos = {}
+	deg = dict.fromkeys(all_nodes, 0) # Dict with 0 values
+	
+	# Lattice structure for nodes
+	N = int(sqrt(len(all_nodes)))
+	scale = 3
+	pos = {}
+	for node in all_nodes:
+		pos[node] = [scale * (int(node) % N), scale * (int(node) / N)]	
+		
+		
+	nx.draw_networkx_nodes(G,pos, nodelist=nodes, node_color='r',
+			node_size=100, alpha=0.8)
+	nx.draw_networkx_nodes(G,pos, nodelist=[x for x in all_nodes if x not in nodes] \
+			, node_color='b', node_size=100, alpha=0.8)
+		
+	nx.draw_networkx_edges(G,pos,width=0.5,alpha=0.5, edge_color='b')			
+	nx.draw_networkx_edges(G.subgraph(nodes),pos,width=0.5,alpha=0.5, edge_color='r')
+	
+	plt.xlabel('red is subgraph, blue is graph')
+	plt.show()
+	
+	
 	
 def draw_dict(filename, colors, adjlist):
 	"""
@@ -195,7 +276,7 @@ def draw_dict(filename, colors, adjlist):
 		plt.ylabel('blue='+str(colornames[1]))
 	else:
 		plt.xlabel('green='+str(colornames[0]))
-	plt.savefig('figs/'+filename+'.png')
+	plt.savefig(filename+'.png')
 	
 
 
@@ -267,42 +348,42 @@ if __name__ == "__main__":
 	#generate_graphs()
 	
 	now = time.clock()	
-	try:
-		# make sure correct number of arguments
-		if len(sys.argv) < 2:
-			raise IndexError()
-			
-		# num seconds of running time allowed	
-		runtime = 180 if len(sys.argv) == 2 else int(sys.argv[2])
-		print runtime				
-
-		# get filename
-		filename = sys.argv[1]
-		
-		# make sure it's a json file
-		try:
-			split = filename.split('.')
-			num_players = int(split[0])
-			num_seeds = int(split[1])
-			id = split[2:]
-		except ValueError:
-			print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
-			exit(1)
-		# read it in as networkx graph
-		try:
-			G = makeGraphFromJSON(filename)
-		except IOError:
-			print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
-			print >> sys.stderr, "    input must be valid json file format"
-			sys.exit(1)
-		
-		seeds = get_seeds(filename+'.seeds.', G, num_seeds, runtime - (time.clock() - now))		
-
-		# visualize
-		draw(G)
 	
-	except IndexError:
+	# make sure correct number of arguments
+	if len(sys.argv) < 2:
+		raise IndexError()
+		
+	# num seconds of running time allowed	
+	runtime = 180 if len(sys.argv) == 2 else int(sys.argv[2])
+	print runtime				
+
+	# get filename
+	filename = sys.argv[1]
+	
+	# make sure it's a json file
+	try:
+		split = filename.split('.')
+		num_players = int(split[0])
+		num_seeds = int(split[1])
+		id = split[2:]
+	except ValueError:
 		print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
+		exit(1)
+	# read it in as networkx graph
+	try:
+		G = makeGraphFromJSON(filename)
+	except IOError:
+		print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
+		print >> sys.stderr, "    input must be valid json file format"
 		sys.exit(1)
+	
+	seeds = get_seeds(filename+'.seeds.', G, num_seeds, runtime - (time.clock() - now))		
+
+	# visualize
+	#draw(G)
+	
+	#except IndexError:
+	#	print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
+	#	sys.exit(1)
 
 

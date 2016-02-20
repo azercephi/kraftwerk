@@ -1,0 +1,1 @@
+{'strategy/2.10.30.json.seeds.top_close': 475, 'strategy/2.10.30.json.seeds.unweighted_top_deg': 22}

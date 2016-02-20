@@ -51,9 +51,10 @@ import sys
 import json
 import networkx as nx
 from seeder import draw_dict
+import os
 
 
-def run(filename, adj_list, node_mappings):
+def run(filename, adj_list, node_mappings, gen_pics=False):
   """
   Function: run
   -------------
@@ -63,11 +64,11 @@ def run(filename, adj_list, node_mappings):
   node_mappings: A dictionary where the key is a name and the value is a list
                  of seed nodes associated with that name.
   """
-  results = run_simulation(filename, adj_list, node_mappings)
+  results = run_simulation(filename, adj_list, node_mappings, gen_pics)
   return results
 
 
-def run_simulation(filename, adj_list, node_mappings):
+def run_simulation(filename, adj_list, node_mappings, gen_pics=False):
   """
   Function: run_simulation
   ------------------------
@@ -92,7 +93,8 @@ def run_simulation(filename, adj_list, node_mappings):
     prev = deepcopy(node_color)
     
     # Draw graph
-    draw_dict(filename+'_iter_'+str(generation), prev, adj_list)
+    if gen_pics:
+		draw_dict(filename+'/iter_'+str(generation), prev, adj_list)
     
     for node in nodes:
       (changed, color) = update(adj_list, prev, node)
@@ -188,12 +190,31 @@ if __name__ == '__main__':
 	s2file = sys.argv[3]
 	with open(s2file, 'r') as s2:			
 		strategy2 = s2.readlines()[0][1:-1].split(',')
+		
+	gen_pics = False
+	if len(sys.argv) > 4:
+		gen_pics = sys.argv[4]
+	
 	
 	graph = json.loads(graph)
 		
 	nodes = {s1file: strategy1, s2file: strategy2}	
-	results = run(gfile, graph, nodes)
+	
+	prefix = 'figs/'+gfile
+	suffix = '/'+s1file.split('/')[-1]+'_vs_'+s2file.split('/')[-1]
+	
+	if not os.path.exists(prefix):
+		os.makedirs(prefix)
+	if not os.path.exists(prefix+suffix):
+		os.makedirs(prefix+suffix)
+	
+	
+	results = run(prefix+suffix, graph, nodes, gen_pics)
+	
 	print results
+	with open(prefix+suffix+'/result.txt','w') as f:
+		f.write(str(results))
+		
 	
 	
 	#print USAGE
