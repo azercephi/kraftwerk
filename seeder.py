@@ -2,6 +2,10 @@
 Main file for Pandemaniac
 Parses JSON graph adjacecy file into networkx and produces seed nodes.
 
+Dependencies:
+Scipy: https://www.scipy.org/install.html
+sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
+
 '''
 
 import json, sys
@@ -113,12 +117,62 @@ def get_seeds(filename, G, n, runtime):
 	# Not actually faster up to 5000 nodes.	
 	top_deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	top_close_nodes = [x[0] for x in top_deg]	
-	write_seeds(filename+'unweighted_top_deg', top_deg[0:n] * 50)	
+	write_seeds(filename+'unweighted_top_deg', top_close_nodes[0:n] * 50)	
 	write_strategy(filename+'unweighted_top_deg',  top_close_nodes[0:n])	
 	top_nodes = [x[0] for x in top_deg]
 	####################################################################
 			
+	print runtime - time.clock()	
+
+	####################################################################
+	# Strategy: Use eigenvector centrality
+	print 'computing ev centrality'
 	
+	ev = nx.eigenvector_centrality(G)
+	top_ev = sorted(ev.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	top_ev_nodes = [x[0] for x in top_ev]	
+	write_seeds(filename+'unweighted_top_ev', top_ev_nodes[0:n] * 50)	
+	write_strategy(filename+'unweighted_top_ev',  top_ev_nodes[0:n])	
+	####################################################################
+	
+	print runtime - time.clock()	
+
+	
+	####################################################################
+	try:
+		# Strategy: Use current_flow_betweenness_centrality centrality
+		print 'computing current_flow_betweenness_centrality'
+		
+		cf_bet = nx.current_flow_betweenness_centrality(G)
+		top_cfbet = sorted(cf_bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		top_cfbet_nodes = [x[0] for x in top_cfbet]	
+		write_seeds(filename+'unweighted_top_cfbet', top_cfbet_nodes[0:n] * 50)	
+		write_strategy(filename+'unweighted_top_cfbet',  top_cfbet_nodes[0:n])	
+	except nx.exception.NetworkXError:
+		pass
+	####################################################################
+	
+	print runtime - time.clock()	
+	
+	
+	
+	####################################################################
+	# Strategy: Use katz centrality
+	try:
+		print 'computing katz centrality'
+		
+		katz = nx.katz_centrality(G)
+		top_katz = sorted(katz.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		top_katz_nodes = [x[0] for x in top_katz]	
+		write_seeds(filename+'unweighted_top_katz', top_katz_nodes[0:n] * 50)	
+		write_strategy(filename+'unweighted_top_katz',  top_katz_nodes[0:n])	
+	except nx.exception.NetworkXError:
+		pass
+	####################################################################
+
+	print runtime - time.clock()	
+
+
 	'''
 	####################################################################
 	# Strategy: Cancel top $n-1$ nodes from TA-degree
@@ -141,9 +195,10 @@ def get_seeds(filename, G, n, runtime):
 	print 'computing closeness centrality'
 	close = nx.closeness_centrality(G)
 	top_close = sorted(close.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	seeds = gen_weighted_samples(top_close, 3, n)
-	write_seeds(filename+'weighted_top_close', seeds)	
-	top_close_nodes = [x[0] for x in top_close]	
+	#seeds = gen_weighted_samples(top_close, 3, n)
+	#write_seeds(filename+'weighted_top_close', seeds)	
+	top_close_nodes = [x[0] for x in top_close]
+	write_seeds(filename+'weighted_top_close', top_close_nodes[0:n] * 50)	
 	write_strategy(filename+'top_close', top_close_nodes[0:n])
 	####################################################################	
 	print runtime - time.clock()
@@ -212,9 +267,9 @@ def draw_subgraph(G, nodes):
 def draw_dict(filename, colors, adjlist):
 	"""
 	Draws a graph with dict 'colors': {nodeid: color, nodeid:color}
-	and adjacency list 'adjlist': {nodeid: [nodeid, nodeid, ...], ...}
-	
+	and adjacency list 'adjlist': {nodeid: [nodeid, nodeid, ...], ...}	
 	"""
+	
 	plt.figure()
 	# to make graph object consistent across function calls
 	nodes = sorted(adjlist.keys()) 

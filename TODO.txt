@@ -1,7 +1,10 @@
 
+
+
 3) make sure we beat TA-degree
 
 
 4) Try spectral clustering - how clustered?
 	pick 'best' node (highest degree?) in every? cluster
 	
+5) blend results together from top_ev and top_closeness and top_deg?
