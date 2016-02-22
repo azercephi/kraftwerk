@@ -176,26 +176,23 @@ def get_result(colors, node_color):
   return color_nodes
 
 
-if __name__ == '__main__':
+def simulate_strategies(gfile, s1file, s2file, gen_pics=False):
 	
 	graph = ''
-	gfile = sys.argv[1]
+	#gfile = sys.argv[1]
 	with open(gfile, 'r') as f:			
 		graph = ''.join([line.strip() for line in f.readlines()])
 	
-	s1file = sys.argv[2]
+	#s1file = sys.argv[2]
 	with open(s1file, 'r') as s1:			
 		strategy1 = s1.readlines()[0][1:-1].split(',')
 		
-	s2file = sys.argv[3]
+	#s2file = sys.argv[3]
 	with open(s2file, 'r') as s2:			
 		strategy2 = s2.readlines()[0][1:-1].split(',')
 		
-	gen_pics = False
-	if len(sys.argv) > 4:
-		gen_pics = sys.argv[4]
 	
-	
+		
 	graph = json.loads(graph)
 		
 	nodes = {s1file: strategy1, s2file: strategy2}	
@@ -211,10 +208,12 @@ if __name__ == '__main__':
 	
 	results = run(prefix+suffix, graph, nodes, gen_pics)
 	
-	print results
+	#print results
 	with open(prefix+suffix+'/result.txt','w') as f:
 		f.write(str(results))
 		
+	return results
 	
+def main():
+	return 1
 	
-	#print USAGE

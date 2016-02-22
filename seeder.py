@@ -19,6 +19,9 @@ import community # sudo pip install python-louvain
 from operator import itemgetter
 from math import sqrt
 from networkx.algorithms import approximation as apxa
+import itertools
+import os
+
 
 from parallel_betweenness_centrality import betweenness_centrality_parallel
 from parallel_closeness_centrality import closeness_centrality_parallel
@@ -37,6 +40,10 @@ def write_seeds(filename, seeds):
 	#for seed_row in seeds:
 	for seed in seeds:
 		outstr +=str(seed)+'\n'
+		
+	if not os.path.exists('seeds/'+filename[0:filename.find('/')]):
+		os.makedirs('seeds/'+filename[0:filename.find('/')])
+		
 
 	with open('seeds/'+filename,'w') as f:
 		f.write(outstr[:-1])
@@ -45,6 +52,9 @@ def write_strategy(filename, seeds):
 	"""
 	Writes strategy as list for use in sim.py
 	"""
+	if not os.path.exists('strategy/'+filename[0:filename.find('/')]):
+		os.makedirs('strategy/'+filename[0:filename.find('/')])
+	
 	with open('strategy/'+filename,'w') as f:
 		f.write(str('['+','.join(seeds)+']')) # gets rid of l=[u'1',u'2'] unicode
 		
@@ -109,6 +119,8 @@ def get_seeds(filename, G, n, runtime):
 	#print partition	
 	#g = list(nx.connected_component_subgraphs(G))	
 	#draw(g[0])
+	
+	promising_nodes = []
 		
 	
 	####################################################################
@@ -117,9 +129,10 @@ def get_seeds(filename, G, n, runtime):
 	# Not actually faster up to 5000 nodes.	
 	top_deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	top_close_nodes = [x[0] for x in top_deg]	
-	write_seeds(filename+'unweighted_top_deg', top_close_nodes[0:n] * 50)	
-	write_strategy(filename+'unweighted_top_deg',  top_close_nodes[0:n])	
+	write_seeds(filename+'/top_deg', top_close_nodes[0:n] * ROUNDS)	
+	write_strategy(filename+'/top_deg',  top_close_nodes[0:n])	
 	top_nodes = [x[0] for x in top_deg]
+	promising_nodes.append(top_nodes[0:n])
 	####################################################################
 			
 	print runtime - time.clock()	
@@ -131,8 +144,9 @@ def get_seeds(filename, G, n, runtime):
 	ev = nx.eigenvector_centrality(G)
 	top_ev = sorted(ev.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	top_ev_nodes = [x[0] for x in top_ev]	
-	write_seeds(filename+'unweighted_top_ev', top_ev_nodes[0:n] * 50)	
-	write_strategy(filename+'unweighted_top_ev',  top_ev_nodes[0:n])	
+	write_seeds(filename+'/top_ev', top_ev_nodes[0:n] * 50)	
+	write_strategy(filename+'/top_ev',  top_ev_nodes[0:n])
+	promising_nodes.append(top_ev_nodes[0:n])
 	####################################################################
 	
 	print runtime - time.clock()	
@@ -146,14 +160,14 @@ def get_seeds(filename, G, n, runtime):
 		cf_bet = nx.current_flow_betweenness_centrality(G)
 		top_cfbet = sorted(cf_bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
 		top_cfbet_nodes = [x[0] for x in top_cfbet]	
-		write_seeds(filename+'unweighted_top_cfbet', top_cfbet_nodes[0:n] * 50)	
-		write_strategy(filename+'unweighted_top_cfbet',  top_cfbet_nodes[0:n])	
+		write_seeds(filename+'/top_cfbet', top_cfbet_nodes[0:n] * ROUNDS)	
+		write_strategy(filename+'/top_cfbet',  top_cfbet_nodes[0:n])
+		promising_nodes.append(top_cfbet_nodes[0:n])
 	except nx.exception.NetworkXError:
 		pass
 	####################################################################
 	
 	print runtime - time.clock()	
-	
 	
 	
 	####################################################################
@@ -164,8 +178,9 @@ def get_seeds(filename, G, n, runtime):
 		katz = nx.katz_centrality(G)
 		top_katz = sorted(katz.items(),key=itemgetter(1), reverse=True)[0:2*n]
 		top_katz_nodes = [x[0] for x in top_katz]	
-		write_seeds(filename+'unweighted_top_katz', top_katz_nodes[0:n] * 50)	
-		write_strategy(filename+'unweighted_top_katz',  top_katz_nodes[0:n])	
+		write_seeds(filename+'/top_katz', top_katz_nodes[0:n] * ROUNDS)	
+		write_strategy(filename+'/top_katz',  top_katz_nodes[0:n])	
+		promising_nodes.append(top_katz_nodes[0:n])
 	except nx.exception.NetworkXError:
 		pass
 	####################################################################
@@ -198,24 +213,61 @@ def get_seeds(filename, G, n, runtime):
 	#seeds = gen_weighted_samples(top_close, 3, n)
 	#write_seeds(filename+'weighted_top_close', seeds)	
 	top_close_nodes = [x[0] for x in top_close]
-	write_seeds(filename+'weighted_top_close', top_close_nodes[0:n] * 50)	
-	write_strategy(filename+'top_close', top_close_nodes[0:n])
+	write_seeds(filename+'/top_close', top_close_nodes[0:n] * ROUNDS)	
+	write_strategy(filename+'/top_close', top_close_nodes[0:n])
+	promising_nodes.append(top_close_nodes[0:n])
 	####################################################################	
 	print runtime - time.clock()
 
 
 	####################################################################
 	# Strategy: Use bewteenness centrality
-	print 'computing betweness centrality'
-	bet = nx.betweenness_centrality(G)
-	top_bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	top_bet_nodes = [x[0] for x in top_bet]	
-	seeds = gen_weighted_samples(top_bet, 3, n)
-	write_seeds(filename+'weighted_top_bet', seeds)	
-	write_strategy(filename+'top_bet', top_bet_nodes[0:n])
+	#print 'computing betweness centrality'
+	#bet = nx.betweenness_centrality(G)
+	#top_bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	#top_bet_nodes = [x[0] for x in top_bet]	
+	#seeds = gen_weighted_samples(top_bet, 3, n)
+	#write_seeds(filename+'/ttop_bet', seeds)	
+	#write_strategy(filename+'/top_bet', top_bet_nodes[0:n])
+	#promising_nodes.append(top_bet_nodes[0:n])
 	####################################################################
+	
+	####################################################################
+	# Strategy: Use dispersion centrality
+	print 'computing dispersion centrality'
+	bet = nx.dispersion(G)
+	top_dis = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	top_dis_nodes = [x[0] for x in top_dis]	
+	write_seeds(filename+'/top_dis', top_dis_nodes[0:n] * ROUNDS)
+	write_strategy(filename+'/top_dis', top_dis_nodes[0:n])
+	promising_nodes.append(top_dis_nodes[0:n])
+	####################################################################
+
+	
+	print promising_nodes
+	filtered_nodes = dict.fromkeys([item for sublist in promising_nodes for item in sublist], 0)
+	for node_list in promising_nodes:
+		for i in range(len(node_list)):
+			filtered_nodes[node_list[i]] += len(node_list)-i # high ranking nodes near front
+	filtered_nodes = sorted(filtered_nodes.items(),key=itemgetter(1), reverse=True)
+
+	if len(filtered_nodes) > n+2:
+		filtered_nodes = [x[0] for x in filtered_nodes[0:n+2]]
+	else:
+		filtered_nodes = [x[0] for x in filtered_nodes]
+	print filtered_nodes
+	
+	ind = 1
+	for combo in itertools.combinations(filtered_nodes, n):
+		#print combo
+		seeds = [str(x) for x in combo]
+		write_seeds(filename+'/promise_'+str(ind), seeds[0:n] * ROUNDS)	
+		write_strategy(filename+'/promise_'+str(ind), seeds[0:n])		
+		ind+=1
 		
 	print runtime - time.clock()
+	
+	exit(1)
 
 	
 def draw(G):
@@ -260,8 +312,7 @@ def draw_subgraph(G, nodes):
 	nx.draw_networkx_edges(G.subgraph(nodes),pos,width=0.5,alpha=0.5, edge_color='r')
 	
 	plt.xlabel('red is subgraph, blue is graph')
-	plt.show()
-	
+	plt.show()	
 	
 	
 def draw_dict(filename, colors, adjlist):
@@ -319,10 +370,8 @@ def draw_dict(filename, colors, adjlist):
 	nx.draw_networkx_nodes(G,pos, nodelist=nocolor, node_color='white', \
 		node_size=100, alpha=0.8)
      
-	nx.draw_networkx_edges(G,pos,width=0.5,alpha=0.5)
-	
-	nx.draw_networkx_labels(G,pos,deg,font_size=6)
-		
+	nx.draw_networkx_edges(G,pos,width=0.5,alpha=0.5)	
+	nx.draw_networkx_labels(G,pos,deg,font_size=6)		
 	
 	#plt.show()
 	

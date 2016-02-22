@@ -1,0 +1,1 @@
+{'strategy/2.10.21.json.seeds./top_close': 976, 'strategy/2.10.21.json.seeds./top_deg': 13}
