@@ -1,0 +1,11 @@
+For this run, we took the top $n$ nodes from eigenvector centrality,
+degree-centrality, Katz centrality, closeness centrality, dispersion
+centrality.
+
+We rank the top nodes from each centrality measure, and take the top 12
+'most promising' (ie most highly ranked across the measures) and generate all
+12C10 = 66 possible choices of these nodes. Then, we pit all these 'promising'
+samples against TA-degree and choose the top 10 winning samples.
+
+Then we populate our prediction with the top 10 winning samples in order,
+repeated.

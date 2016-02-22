@@ -125,7 +125,7 @@ def get_seeds(filename, G, n, runtime):
 	
 	####################################################################
 	# Strategy: Use degree (simulates TA-degree)
-	deg = nx.degree(G)	
+	deg = dict(nx.degree(G))	
 	# Not actually faster up to 5000 nodes.	
 	top_deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
 	top_close_nodes = [x[0] for x in top_deg]	
@@ -269,7 +269,29 @@ def get_seeds(filename, G, n, runtime):
 	
 	exit(1)
 
+	####################################################################
+	print 'computing random walk betweenness centrality'
+	randwalk = nx.approximate_current_flow_betweenness_centrality(G)
+	# approximate much faster than original
+	top_rw = sorted(randwalk.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	top_rw_all = [x[0] for x in top_rw]	
+	seeds = gen_weighted_samples(top_rw, 3, n)
+	write_seeds(filename+'weighted_top_rw', seeds)	
+	write_strategy(filename+'rand_walk', top_bet_nodes[0:n])
+	####################################################################
 	
+	####################################################################
+	print 'computing dispersion centrality'
+	disp = nx.dispersion(G)
+	# approximate much faster than original
+	top_disp = sorted(disp.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	top_disp_all = [x[0] for x in top_disp]	
+	seeds = gen_weighted_samples(top_disp, 3, n)
+	write_seeds(filename+'weighted_top_disp', seeds)	
+	write_strategy(filename+'dispersion', top_bet_nodes[0:n])
+	####################################################################	
+	
+
 def draw(G):
 	"""
 	Draws a networkx graph object
@@ -382,7 +404,6 @@ def draw_dict(filename, colors, adjlist):
 		plt.xlabel('green='+str(colornames[0]))
 	plt.savefig(filename+'.png')
 	
-
 
 def makeGraphFromJSON(filename):
 	"""

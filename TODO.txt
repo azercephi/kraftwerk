@@ -1,10 +1,18 @@
 
 
 
-3) make sure we beat TA-degree
+1) How to visualize graphs?
 
+2) More simulated runs? Not just against TA-degree, but pit all?
+	(or a 'large enough' sample) against each other?
 
-4) Try spectral clustering - how clustered?
+3) Look at performance of past days. Why did we lose? Why do our blended algorithms work well?
+
+4) make sure we beat TA-degree
+
+5) Check parallel top_betweenness, top_closeness
+
+6) Try spectral clustering - how clustered?
 	pick 'best' node (highest degree?) in every? cluster
 	
-5) blend results together from top_ev and top_closeness and top_deg?
+7) blend results together from top_ev and top_closeness and top_deg?
