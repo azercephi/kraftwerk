@@ -22,11 +22,8 @@ from networkx.algorithms import approximation as apxa
 import itertools
 import os
 
-
 from parallel_betweenness_centrality import betweenness_centrality_parallel
 from parallel_closeness_centrality import closeness_centrality_parallel
-
-
 
 
 ROUNDS = 50 # Number of rounds in a game
@@ -85,6 +82,7 @@ def get_seeds(filename, G, n, runtime):
 	"""	
 		
 	print runtime - time.clock()	
+	promising_nodes = []
 
 	'''
 	####################################################################
@@ -105,36 +103,43 @@ def get_seeds(filename, G, n, runtime):
 				
 				print 'computing large '+str(k)+'subgraph closeness centrality'
 				subclose = nx.closeness_centrality(subG)
-				top_subclose = sorted(subclose.items(),key=itemgetter(1), reverse=True)
-				#seeds = gen_weighted_samples(top_subclose, 3, n)
-				#write_seeds(filename+'weighted_top_close', seeds)	
-				top_subclose_nodes = [x[0] for x in top_subclose]	
-				write_strategy(filename+'top_sub'+str(k)+'close', top_subclose_nodes[0:n])
+				subclose = sorted(subclose.items(),key=itemgetter(1), reverse=True)
+				#seeds = gen_weighted_samples(subclose, 3, n)
+				#write_seeds(filename+'weighted_close', seeds)	
+				subclose_nodes = [x[0] for x in subclose]	
+				write_strategy(filename+'sub'+str(k)+'close', subclose_nodes[0:n])
 	####################################################################
-	'''
-		
+	'''		
 	
 	# Use partitions?
-	#partition = community.best_partition(G)
-	#print partition	
-	#g = list(nx.connected_component_subgraphs(G))	
-	#draw(g[0])
-	
-	promising_nodes = []
+	use_part = False
+	if use_part:	
+		partition = community.best_partition(G)
+		print partition	
+		#g = nx.connected_component_subgraphs(G)
 		
-	
+		rev_partition = {}
+		for k, v in partition.iteritems():
+			rev_partition.setdefault(v, []).append(k)
+		
+		for key in rev_partition.keys():
+			nodes = rev_partition[key]
+			print 'subgraph', nodes
+			draw_subgraph(G, nodes)
+		exit(1)
 	####################################################################
 	# Strategy: Use degree (simulates TA-degree)
 	deg = dict(nx.degree(G))	
-	# Not actually faster up to 5000 nodes.	
-	top_deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	top_close_nodes = [x[0] for x in top_deg]	
-	write_seeds(filename+'/top_deg', top_close_nodes[0:n] * ROUNDS)	
-	write_strategy(filename+'/top_deg',  top_close_nodes[0:n])	
-	top_nodes = [x[0] for x in top_deg]
-	promising_nodes.append(top_nodes[0:n])
-	####################################################################
-			
+	deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	deg_nodes = [x[0] for x in deg]	
+	write_seeds(filename+'/deg', deg_nodes[0:n] * ROUNDS)	
+	write_strategy(filename+'/deg',  deg_nodes[0:n])	
+	# Use degree with 20% more nodes (simulates TA-more)
+	write_strategy(filename+'/more_deg', deg_nodes[0:int(1.2*n)])
+	nodes = [x[0] for x in deg]
+	promising_nodes.append(nodes[0:n])
+	####################################################################	
+				
 	print runtime - time.clock()	
 
 	####################################################################
@@ -142,15 +147,14 @@ def get_seeds(filename, G, n, runtime):
 	print 'computing ev centrality'
 	
 	ev = nx.eigenvector_centrality(G)
-	top_ev = sorted(ev.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	top_ev_nodes = [x[0] for x in top_ev]	
-	write_seeds(filename+'/top_ev', top_ev_nodes[0:n] * 50)	
-	write_strategy(filename+'/top_ev',  top_ev_nodes[0:n])
-	promising_nodes.append(top_ev_nodes[0:n])
+	ev = sorted(ev.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	ev_nodes = [x[0] for x in ev]	
+	write_seeds(filename+'/ev', ev_nodes[0:n] * 50)	
+	write_strategy(filename+'/ev',  ev_nodes[0:n])
+	promising_nodes.append(ev_nodes[0:n])
 	####################################################################
 	
-	print runtime - time.clock()	
-
+	print runtime - time.clock()
 	
 	####################################################################
 	try:
@@ -158,17 +162,16 @@ def get_seeds(filename, G, n, runtime):
 		print 'computing current_flow_betweenness_centrality'
 		
 		cf_bet = nx.current_flow_betweenness_centrality(G)
-		top_cfbet = sorted(cf_bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
-		top_cfbet_nodes = [x[0] for x in top_cfbet]	
-		write_seeds(filename+'/top_cfbet', top_cfbet_nodes[0:n] * ROUNDS)	
-		write_strategy(filename+'/top_cfbet',  top_cfbet_nodes[0:n])
-		promising_nodes.append(top_cfbet_nodes[0:n])
+		cfbet = sorted(cf_bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		cfbet_nodes = [x[0] for x in cfbet]	
+		write_seeds(filename+'/cfbet', cfbet_nodes[0:n] * ROUNDS)	
+		write_strategy(filename+'/cfbet',  cfbet_nodes[0:n])
+		promising_nodes.append(cfbet_nodes[0:n])
 	except nx.exception.NetworkXError:
 		pass
 	####################################################################
 	
-	print runtime - time.clock()	
-	
+	print runtime - time.clock()		
 	
 	####################################################################
 	# Strategy: Use katz centrality
@@ -176,73 +179,89 @@ def get_seeds(filename, G, n, runtime):
 		print 'computing katz centrality'
 		
 		katz = nx.katz_centrality(G)
-		top_katz = sorted(katz.items(),key=itemgetter(1), reverse=True)[0:2*n]
-		top_katz_nodes = [x[0] for x in top_katz]	
-		write_seeds(filename+'/top_katz', top_katz_nodes[0:n] * ROUNDS)	
-		write_strategy(filename+'/top_katz',  top_katz_nodes[0:n])	
-		promising_nodes.append(top_katz_nodes[0:n])
+		katz = sorted(katz.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		katz_nodes = [x[0] for x in katz]	
+		write_seeds(filename+'/katz', katz_nodes[0:n] * ROUNDS)	
+		write_strategy(filename+'/katz',  katz_nodes[0:n])	
+		promising_nodes.append(katz_nodes[0:n])
 	except nx.exception.NetworkXError:
 		pass
 	####################################################################
 
-	print runtime - time.clock()	
-
+	print runtime - time.clock()
 
 	'''
 	####################################################################
 	# Strategy: Cancel top $n-1$ nodes from TA-degree
-	seeds = top_nodes[0:n-1]
+	seeds = nodes[0:n-1]
 	
 	# Add node adjacent to node of highest degree
-	for edge in G.edges(top_nodes[0]):
+	for edge in G.edges(nodes[0]):
 		if edge[1] not in seeds:
 			 seeds.append(edge[1])
 			 break	
-	write_seeds(filename+'top_beatdeg', seeds*50)
-	write_strategy(filename+'top_beatdeg', seeds)	
-	write_strategy(filename+'unweighted_top_deg', top_nodes[0:n])
+	write_seeds(filename+'beatdeg', seeds*50)
+	write_strategy(filename+'beatdeg', seeds)	
+	write_strategy(filename+'unweighted_deg', nodes[0:n])
 	####################################################################
 	'''
 	print runtime - time.clock()	
 	
 	####################################################################
-	# Strategy: Use closenss centrality
+	# Strategy: Use closeness centrality
 	print 'computing closeness centrality'
 	close = nx.closeness_centrality(G)
-	top_close = sorted(close.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	#seeds = gen_weighted_samples(top_close, 3, n)
-	#write_seeds(filename+'weighted_top_close', seeds)	
-	top_close_nodes = [x[0] for x in top_close]
-	write_seeds(filename+'/top_close', top_close_nodes[0:n] * ROUNDS)	
-	write_strategy(filename+'/top_close', top_close_nodes[0:n])
-	promising_nodes.append(top_close_nodes[0:n])
-	####################################################################	
+	close = sorted(close.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	#seeds = gen_weighted_samples(close, 3, n)
+	#write_seeds(filename+'weighted_close', seeds)	
+	close_nodes = [x[0] for x in close]
+	write_seeds(filename+'/close', close_nodes[0:n] * ROUNDS)	
+	write_strategy(filename+'/close', close_nodes[0:n])
+	# Simulates TA-more
+	write_strategy(filename+'/more_close', close_nodes[0:int(1.2*n)])
+	promising_nodes.append(close_nodes[0:n])
+	####################################################################
+		
 	print runtime - time.clock()
-
 
 	####################################################################
 	# Strategy: Use bewteenness centrality
-	#print 'computing betweness centrality'
-	#bet = nx.betweenness_centrality(G)
-	#top_bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	#top_bet_nodes = [x[0] for x in top_bet]	
-	#seeds = gen_weighted_samples(top_bet, 3, n)
-	#write_seeds(filename+'/ttop_bet', seeds)	
-	#write_strategy(filename+'/top_bet', top_bet_nodes[0:n])
-	#promising_nodes.append(top_bet_nodes[0:n])
+	print 'computing betweness centrality'
+	bet = nx.betweenness_centrality(G)
+	bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	bet_nodes = [x[0] for x in bet]	
+	write_seeds(filename+'/bet', bet_nodes[0:n] * ROUNDS)	
+	write_strategy(filename+'/bet', bet_nodes[0:n])
+	promising_nodes.append(bet_nodes[0:n])
 	####################################################################
+	
+	print runtime - time.clock()
 	
 	####################################################################
 	# Strategy: Use dispersion centrality
 	print 'computing dispersion centrality'
 	bet = nx.dispersion(G)
-	top_dis = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	top_dis_nodes = [x[0] for x in top_dis]	
-	write_seeds(filename+'/top_dis', top_dis_nodes[0:n] * ROUNDS)
-	write_strategy(filename+'/top_dis', top_dis_nodes[0:n])
-	promising_nodes.append(top_dis_nodes[0:n])
+	dis = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	dis_nodes = [x[0] for x in dis]	
+	write_seeds(filename+'/dis', dis_nodes[0:n] * ROUNDS)
+	write_strategy(filename+'/dis', dis_nodes[0:n])
+	promising_nodes.append(dis_nodes[0:n])
 	####################################################################
+		
+	print runtime - time.clock()	
 
+	####################################################################
+	print 'computing random walk betweenness centrality'
+	randwalk = nx.approximate_current_flow_betweenness_centrality(G)
+	# approximate much faster than original
+	rw = sorted(randwalk.items(),key=itemgetter(1), reverse=True)[0:2*n]
+	rw_nodes = [x[0] for x in rw]	
+	write_seeds(filename+'/rw', rw_nodes)	
+	write_strategy(filename+'/rw', rw_nodes[0:n])
+	promising_nodes.append(rw_nodes[0:n])
+	####################################################################
+	
+	print runtime - time.clock()
 	
 	print promising_nodes
 	filtered_nodes = dict.fromkeys([item for sublist in promising_nodes for item in sublist], 0)
@@ -251,11 +270,24 @@ def get_seeds(filename, G, n, runtime):
 			filtered_nodes[node_list[i]] += len(node_list)-i # high ranking nodes near front
 	filtered_nodes = sorted(filtered_nodes.items(),key=itemgetter(1), reverse=True)
 
+	print filtered_nodes
 	if len(filtered_nodes) > n+2:
 		filtered_nodes = [x[0] for x in filtered_nodes[0:n+2]]
 	else:
 		filtered_nodes = [x[0] for x in filtered_nodes]
-	print filtered_nodes
+	
+	
+	
+	hybrid = [str(x) for x in list(set(deg_nodes[0:n] + bet_nodes[0:n] + ev_nodes[0:n]))]
+#	for combo in itertools.combinations(hybrid, n):
+	
+	ind = 1
+	for ind in range(1,300):
+		hybrid = np.random.permutation(hybrid)
+		seeds = [str(x) for x in hybrid]
+		write_seeds(filename+'/hybrid'+str(ind), seeds[0:n] * ROUNDS)	
+		write_strategy(filename+'/hybrid'+str(ind), seeds[0:n])		
+		
 	
 	ind = 1
 	for combo in itertools.combinations(filtered_nodes, n):
@@ -264,32 +296,6 @@ def get_seeds(filename, G, n, runtime):
 		write_seeds(filename+'/promise_'+str(ind), seeds[0:n] * ROUNDS)	
 		write_strategy(filename+'/promise_'+str(ind), seeds[0:n])		
 		ind+=1
-		
-	print runtime - time.clock()
-	
-	exit(1)
-
-	####################################################################
-	print 'computing random walk betweenness centrality'
-	randwalk = nx.approximate_current_flow_betweenness_centrality(G)
-	# approximate much faster than original
-	top_rw = sorted(randwalk.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	top_rw_all = [x[0] for x in top_rw]	
-	seeds = gen_weighted_samples(top_rw, 3, n)
-	write_seeds(filename+'weighted_top_rw', seeds)	
-	write_strategy(filename+'rand_walk', top_bet_nodes[0:n])
-	####################################################################
-	
-	####################################################################
-	print 'computing dispersion centrality'
-	disp = nx.dispersion(G)
-	# approximate much faster than original
-	top_disp = sorted(disp.items(),key=itemgetter(1), reverse=True)[0:2*n]
-	top_disp_all = [x[0] for x in top_disp]	
-	seeds = gen_weighted_samples(top_disp, 3, n)
-	write_seeds(filename+'weighted_top_disp', seeds)	
-	write_strategy(filename+'dispersion', top_bet_nodes[0:n])
-	####################################################################	
 	
 
 def draw(G):
@@ -330,8 +336,10 @@ def draw_subgraph(G, nodes):
 	nx.draw_networkx_nodes(G,pos, nodelist=[x for x in all_nodes if x not in nodes] \
 			, node_color='b', node_size=100, alpha=0.8)
 		
+	
 	nx.draw_networkx_edges(G,pos,width=0.5,alpha=0.5, edge_color='b')			
 	nx.draw_networkx_edges(G.subgraph(nodes),pos,width=0.5,alpha=0.5, edge_color='r')
+
 	
 	plt.xlabel('red is subgraph, blue is graph')
 	plt.show()	
@@ -501,9 +509,12 @@ if __name__ == "__main__":
 		print >> sys.stderr, "usage: python seeder.py num_players.num_seeds.id [time]"
 		print >> sys.stderr, "    input must be valid json file format"
 		sys.exit(1)
+		
+	#draw(G)
+	#exit(1)	
 	
 	seeds = get_seeds(filename+'.seeds.', G, num_seeds, runtime - (time.clock() - now))		
-
+	exit(1)
 	# visualize
 	#draw(G)
 	

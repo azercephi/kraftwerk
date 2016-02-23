@@ -16,29 +16,36 @@ def main():
 	
 	strategies = sorted([f for f in listdir(folder) if isfile(join(folder, f))], reverse=True)
 
-	assert('top_deg' in strategies)
+	assert('more_deg' in strategies)
 	
 	print strategies
 	
 	winning = []
 	
 	for strategy in strategies:
-		if strategy != 'top_deg':
+		if strategy.find('more') == -1:
 			result = simulate_strategies(str(graph), folder+'/'+ \
-				strategy, folder+'/top_deg')
+				strategy, folder+'/more_deg')
 				
-			deg_cnt = result[folder+'/top_deg']
+			result2 = simulate_strategies(str(graph), folder+'/'+ \
+				strategy, folder+'/more_close')
+				
+			deg_cnt = result[folder+'/more_deg']
 			strat_cnt = result[folder+'/'+strategy]
-			if strat_cnt > deg_cnt:
-				winning.append([folder+'/'+strategy, strat_cnt])
+			
+			close_cnt = result2[folder+'/more_close']
+			strat_cnt2 = result2[folder+'/'+strategy]
+			if strat_cnt2 > close_cnt or strat_cnt > deg_cnt:
+				winning.append([folder+'/'+strategy, strat_cnt+strat_cnt2])
 				print result
 					
 	winning.sort(key=lambda x: x[1], reverse=True)
 	
 	if len(winning) > 10: # Our winnings are bountiful
 		winning = winning[0:10]
-	winning  = [x[0] for x in winning]
 	print 'winning', winning
+
+	winning  = [x[0] for x in winning]
 
 	all_winning = []
 	for strat in winning:
