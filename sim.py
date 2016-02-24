@@ -205,7 +205,7 @@ def simulate_strategies(gfile, s1file, s2file, gen_pics=False):
 	if not os.path.exists(prefix+suffix):
 		os.makedirs(prefix+suffix)
 	
-	
+	#print nodes
 	results = run(prefix+suffix, graph, nodes, gen_pics)
 	
 	#print results
@@ -215,5 +215,21 @@ def simulate_strategies(gfile, s1file, s2file, gen_pics=False):
 	return results
 	
 def main():
-	return 1
+	results = []
+	ta_cnt=0
+	won_cnt = 0
+	for i in range(1,50):
+		res= simulate_strategies(sys.argv[1], sys.argv[2],sys.argv[3]+'/TA_more_'+str(i) , False)
+		print res
+		ta_num = int(res[sys.argv[3]+'/TA_more_'+str(i)])
+		ta_cnt += ta_num
+		
+		if ta_num < 250:
+			won_cnt += 1
+				
+		print 1-ta_cnt / (500. * i)
+	print 'won_cnt', won_cnt
+		
 	
+	
+main()

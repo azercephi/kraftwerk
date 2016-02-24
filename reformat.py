@@ -45,22 +45,34 @@ if __name__ == "__main__":
 	
 	# get filename
 	filename = sys.argv[1]
+	n = int(filename.split('.')[1])
+	
+	if not os.path.exists('strategy/'+filename):
+		os.makedirs('strategy/'+filename)	
 	
 	with open(filename) as dataFile:
 		
-		players = json.load(dataFile)
+		players = json.load(dataFile)		
+		ind=1
+		for nodes in players["TA_more"]:
+			stratfile = 'TA_more_'+str(ind)
+			with open('strategy/'+filename+'/'+stratfile, 'w+') as t:
+				out= [int(x) for x in nodes]
+				out = '['+','.join([str(x) for x in out])+']'
+				t.write(str(out))
+			ind+=1
+			
 		
 		for player in players.keys():
 			seedfile = filename.split('-')[0] + "_" + str(player)
-			s = open(seedfile, 'w+')
-			
-			stratfile = str(player)
-			t = open(stratfile, 'w+')
-			
+			s = open(seedfile, 'w+')			
 			for nodeset in players[player]:
-				t.write(nodeset)
+				
+				
+				
 				for node in nodeset:
 					s.write(node)
 					s.write("\n")
-				
+				ind =0
+
 

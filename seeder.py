@@ -500,8 +500,6 @@ def getClusterSeeds(graph, n):
 		deg_nodes = [x[0] for x in deg]	
 		write_seeds(filename+'/clust_deg', deg_nodes[0:n] * ROUNDS)	
 		write_strategy(filename+'/clust_deg',  deg_nodes[0:n])	
-		# Use degree with 20% more nodes (simulates TA-more)
-		#write_strategy(filename+'/more_deg', deg_nodes[0:int(1.2*n)])
 		nodes = [x[0] for x in deg]
 		cluster_nodes.append(nodes[0:n])
 		####################################################################	
@@ -520,29 +518,124 @@ def getClusterSeeds(graph, n):
 		cluster_nodes.append(ev_nodes[0:n])
 		####################################################################
 		
-		print cluster_nodes
+		####################################################################
+		# Strategy: Use closeness centrality
+		print 'computing closeness centrality'
+		close = nx.closeness_centrality(G)
+		close = sorted(close.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		#seeds = gen_weighted_samples(close, 3, n)
+		#write_seeds(filename+'weighted_close', seeds)	
+		close_nodes = [x[0] for x in close]
+		write_seeds(filename+'/clust_close', close_nodes[0:n] * ROUNDS)	
+		write_strategy(filename+'/clust_close', close_nodes[0:n])
+		cluster_nodes.append(close_nodes[0:n])
+		####################################################################
+			
+		print runtime - time.clock()
+
+		####################################################################
+		# Strategy: Use bewteenness centrality
+		print 'computing betweness centrality'
+		bet = nx.betweenness_centrality(G)
+		bet = sorted(bet.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		bet_nodes = [x[0] for x in bet]	
+		write_seeds(filename+'/bet', bet_nodes[0:n] * ROUNDS)	
+		write_strategy(filename+'/bet', bet_nodes[0:n])
+		cluster_nodes.append(bet_nodes[0:n])
+		####################################################################
+				
+		
+		#print cluster_nodes
 		filtered_nodes = dict.fromkeys([item for sublist in cluster_nodes for item in sublist], 0)
 		for node_list in cluster_nodes:
 			for i in range(len(node_list)):
 				filtered_nodes[node_list[i]] += len(node_list)-i # high ranking nodes near front
 		filtered_nodes = sorted(filtered_nodes.items(),key=itemgetter(1), reverse=True)
 
-		print filtered_nodes
+		#print filtered_nodes
 		if len(filtered_nodes) > n+2:
 			filtered_nodes = [str(x[0]) for x in filtered_nodes[0:n+2]]
 		else:
 			filtered_nodes = [str(x[0]) for x in filtered_nodes]
 			
 		promising_nodes.append(filtered_nodes)
-		
-	seeds = []
 	
-	for i in range(n):
+	
+	####################################################################
+	# Take even number from each cluster	
+	seeds = []	
+	for i in range(2*n):
 		seeds.append(promising_nodes[i % len(clusters)][i / len(clusters)])
 	print seeds
+	seeds = list(set(seeds))
 	
 	write_seeds(filename+'/cluster', seeds[0:n] * ROUNDS)	
 	write_strategy(filename+'/cluster',  seeds[0:n])
+	####################################################################	
+	
+	
+	####################################################################
+	# Take proportional to number of nodes in each cluster
+	seeds2 = []	
+	total_size = sum([len(g.nodes()) for g in clusters.values()])
+	prop= [len(g.nodes()) / float(total_size) for g in clusters.values()]
+	max_ind = prop.index(max(prop))
+
+	
+	print prop
+	prop = [int(round(cluster_prop * n)) for cluster_prop in prop]
+	print prop
+
+	
+	for num in prop:
+		for i in range(num):
+			pot_node = promising_nodes[prop.index(num)][i]
+			if pot_node not in seeds2:
+				seeds2.append(pot_node)
+		
+	seeds2 += promising_nodes[max_ind][0:n]
+	
+	seeds2 = list(set(seeds2))[0:n]
+	print seeds2
+
+	
+	write_seeds(filename+'/cluster2', seeds2[0:n] * ROUNDS)	
+	write_strategy(filename+'/cluster2',  seeds2[0:n])
+	
+	
+	####################################################################
+	
+	####################################################################
+	# Take proportional to number of edges in each cluster
+	seeds3 = []	
+	total_size = sum([len(g.edges()) for g in clusters.values()])
+	prop= [len(g.edges()) / float(total_size) for g in clusters.values()]
+	max_ind = prop.index(max(prop))
+
+	
+	print '\n\n\n\n'
+	print prop
+	
+	prop = [int(round(cluster_prop * n)) for cluster_prop in prop]
+	print prop
+	
+	for num in prop:
+		for i in range(num):
+			pot_node = promising_nodes[prop.index(num)][i]
+			if pot_node not in seeds3:
+				seeds3.append(pot_node)
+		
+	seeds3 += promising_nodes[max_ind][0:n]
+	seeds3 = list(set(seeds3))[0:n]
+
+	print seeds3
+	
+	write_seeds(filename+'/cluster3', seeds3[0:n] * ROUNDS)	
+	write_strategy(filename+'/cluster3',  seeds3[0:n])	
+	####################################################################
+	
+	
+
 	
 	
 	exit(1)

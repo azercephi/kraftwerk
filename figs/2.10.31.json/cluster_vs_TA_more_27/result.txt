@@ -1,0 +1,1 @@
+{'strategy/2.10.31-kraftwerk.json/TA_more_27': 480, 'strategy/2.10.31.json/cluster': 12}
