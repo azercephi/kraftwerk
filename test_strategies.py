@@ -35,9 +35,9 @@ def main():
 			
 			close_cnt = result2[folder+'/more_close']
 			strat_cnt2 = result2[folder+'/'+strategy]
-			if strat_cnt2 > close_cnt or strat_cnt > deg_cnt:
-				winning.append([folder+'/'+strategy, strat_cnt+strat_cnt2])
-				print result
+			#if strat_cnt2 > close_cnt or strat_cnt > deg_cnt:
+			winning.append([folder+'/'+strategy, strat_cnt+strat_cnt2])
+				#print result
 					
 	winning.sort(key=lambda x: x[1], reverse=True)
 	
