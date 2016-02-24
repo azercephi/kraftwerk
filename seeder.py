@@ -21,6 +21,7 @@ from math import sqrt
 from networkx.algorithms import approximation as apxa
 import itertools
 import os
+from analyze import graphCommunities
 
 from parallel_betweenness_centrality import betweenness_centrality_parallel
 from parallel_closeness_centrality import closeness_centrality_parallel
@@ -80,6 +81,10 @@ def get_seeds(filename, G, n, runtime):
 	"""
 	Generate n seeds for networkx graph object G using at most 'runtime' seconds
 	"""	
+		
+	clusters, total = graphCommunities(G)
+	print clusters, total
+	exit(1)	
 		
 	print runtime - time.clock()	
 	promising_nodes = []
@@ -477,49 +482,73 @@ def generate_graphs():
 	draw(red)
 		
 	exit(1)
-
-def graphCommunities(graph):
 	
-	# find the groups each node belongs to
-	part = community.best_partition(graph)
-
-	# get total number of clusters and set up dictionary
-	clusters = {}
-	total = max(part.values()) + 1
-	for i in range(total):
-		clusters[i] = []
-
-	# sort nodes into clusters
-	for node, group in part.items():
-		clusters[group].append(node)
-
-	# turn clusters into a separate graph
-	for c, nodes in clusters.items():
-		clusters[c] = graph.subgraph(clusters[c])
-
-	## Now display clustering of original graph by fixing a point from each
-	## cluster and letting networkx arrange the rest of nodes
-
-	fixed = {}
-	x = 0
-	for _, c in clusters.items():
-		# find node of highest degree centrality within each cluster
-		deg = nx.degree_centrality(c)
-		deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0]
-		fixed[deg[0]] = (x, random())
+def getClusterSeeds(graph, n):
+	''' get seeds from cluster/communities'''
+	clusters, total = graphCommunities(graph)
+	
+	promising_nodes = []
+	
+	for _, c in clusters.items():		
+		cluster_nodes = []
 		
-		x += 1
+		####################################################################
+		# Strategy: Use degree (simulates TA-degree)
+		# find node of highest degree centrality within each cluster		
+		deg = dict(nx.degree_centrality(c))	
+		deg = sorted(deg.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		deg_nodes = [x[0] for x in deg]	
+		write_seeds(filename+'/clust_deg', deg_nodes[0:n] * ROUNDS)	
+		write_strategy(filename+'/clust_deg',  deg_nodes[0:n])	
+		# Use degree with 20% more nodes (simulates TA-more)
+		#write_strategy(filename+'/more_deg', deg_nodes[0:int(1.2*n)])
+		nodes = [x[0] for x in deg]
+		cluster_nodes.append(nodes[0:n])
+		####################################################################	
+					
+		print runtime - time.clock()	
 
-	# graph
-	# plt.axis("off")
+		####################################################################
+		# Strategy: Use eigenvector centrality
+		print 'computing ev centrality'
+		
+		ev = nx.eigenvector_centrality(c)
+		ev = sorted(ev.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		ev_nodes = [x[0] for x in ev]	
+		write_seeds(filename+'/clust_ev', ev_nodes[0:n] * 50)	
+		write_strategy(filename+'/clust_ev',  ev_nodes[0:n])
+		cluster_nodes.append(ev_nodes[0:n])
+		####################################################################
+		
+		print cluster_nodes
+		filtered_nodes = dict.fromkeys([item for sublist in cluster_nodes for item in sublist], 0)
+		for node_list in cluster_nodes:
+			for i in range(len(node_list)):
+				filtered_nodes[node_list[i]] += len(node_list)-i # high ranking nodes near front
+		filtered_nodes = sorted(filtered_nodes.items(),key=itemgetter(1), reverse=True)
 
-	pos = nx.spring_layout(graph, fixed=fixed.keys(), pos=fixed)
-
-	values = [part.get(node) for node in graph.nodes()]
-
-	nx.draw_networkx(graph, pos=pos, cmap = plt.get_cmap('jet'), node_color = values, node_size=30, with_labels=True)
-
-	py.show()
+		print filtered_nodes
+		if len(filtered_nodes) > n+2:
+			filtered_nodes = [str(x[0]) for x in filtered_nodes[0:n+2]]
+		else:
+			filtered_nodes = [str(x[0]) for x in filtered_nodes]
+			
+		promising_nodes.append(filtered_nodes)
+		
+	seeds = []
+	
+	for i in range(n):
+		seeds.append(promising_nodes[i % len(clusters)][i / len(clusters)])
+	print seeds
+	
+	write_seeds(filename+'/cluster', seeds[0:n] * ROUNDS)	
+	write_strategy(filename+'/cluster',  seeds[0:n])
+	
+	
+	exit(1)
+		
+		
+		
 
 if __name__ == "__main__":
 	#generate_graphs()
@@ -557,8 +586,10 @@ if __name__ == "__main__":
 	#draw(G)
 	#exit(1)	
 	
-	seeds = get_seeds(filename+'.seeds.', G, num_seeds, runtime - (time.clock() - now))		
-	exit(1)
+	#seeds = get_seeds(filename+'.seeds.', G, num_seeds, runtime - (time.clock() - now))		
+
+	seeds = getClusterSeeds( G, num_seeds)		
+
 	# visualize
 	#draw(G)
 	

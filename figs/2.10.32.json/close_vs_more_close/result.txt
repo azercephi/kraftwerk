@@ -1,0 +1,1 @@
+{'strategy/2.10.32.json.seeds./close': 0, 'strategy/2.10.32.json.seeds./more_close': 500}
