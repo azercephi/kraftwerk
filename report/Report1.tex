@@ -3,6 +3,15 @@
 \usepackage[noend]{algpseudocode}
 \usepackage[]{algorithm}
 \usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{tkz-berge}
+\usepackage{array}
+
+
+\usepackage[letterpaper, margin=1in]{geometry}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
 
 \begin{document}
@@ -15,9 +24,74 @@
 \textbf{TODO:}
 parallel computations? Jessica's things (spectral clustering?), visualizations. Descriptions of different centralities and why they wold be promising. Intro/Conclusion
 
+
 \section{Introduction and Overview}
+\subsection{Introduction}
+We used networkx \cite{networkx}
+
+\textbf{TODO}
+
+\subsection{Counterexample}
+In some cases, a set of initial colorings may result in a game which fails to converge. Consider, for example, the complete bipartite graph, $K_{m,n}$, $m,n \geq 2$ with disjoint nodesets $U, V$ and initial colorings red $R= U$, blue $B=V$. At each timestep, time $t$, the nodes in $A$ will convert the of nodes in $V$. Meanwhile, the nodes in $B$ will convert the nodes in $U$. There are no edges between colored nodes initially, and this property remains through each iteration. So, the colorings will always alternate between the bipartite sets. Figure \ref{fig:converge} shows the behavior of this game, which fails to converge.
+  
+\begin{figure}[h!]   
+\begin{center}
+\tikzstyle{every node}=[circle, draw, fill=black, minimum width=10pt]
+
+\begin{tikzpicture}
+\foreach \x in {-2,-1,0,1,2}
+	\foreach \y in {-1,0,1}{
+		\draw (2*\y,0) -- (2*\x,2);
+	}
+	\foreach \x in {-2,-1,0,1,2}{
+		\node[blue,circle,inner sep=1pt,fill] at (2*\x,2) {};
+	}
+	\foreach \x in {-1,0,1}{
+		\node[red,circle,inner sep=1pt,fill] at (2*\x,0) {};
+	}
+\end{tikzpicture}
+\caption{Graph at $t\mod 2 = 0$}
+
+\begin{tikzpicture}
+\foreach \x in {-2,-1,0,1,2}
+	\foreach \y in {-1,0,1}{
+		\draw (2*\y,0) -- (2*\x,2);
+	}
+	\foreach \x in {-2,-1,0,1,2}{
+		\node[red,circle,inner sep=1pt,fill] at (2*\x,2) {};
+	}
+	\foreach \x in {-1,0,1}{
+		\node[blue,circle,inner sep=1pt,fill] at (2*\x,0) {};
+	}
+\end{tikzpicture}
+\caption{Graph at $t\mod 2 = 1$}
+\label{fig:converge}
+\end{center}
+
+\end{figure}
 
 \section{Visualization}
+Visualization was an important component of this project, especially for understanding how seed node selection propogated through the graph. We explored several built-in and custom visualizations through the networkx package. One critertion for visualization was maintaining a consistent A circular layout was not instructive and nodes were too close together. We implemented a custom grid layout, as in Figure \ref{fig:visualization}. The grid layout failed to capture the structure of the graph, but was useful for viewing the progress of cascades.
+\par
+To visualize the structure of the graph at a single timepoint, we used networkx's `spectral layout', which uses Hooke's law with force proportional to node degree to place nodes. Figure \ref{fig:visualization} shows a coloring of graph clusters, which is useful for understanding general graph structure.
+
+\begin{figure}[h]
+\begin{center}
+\begin{subfigure}{.49\textwidth}
+\includegraphics[width=\textwidth]{{day1_figs/2.10.10.json_iter_1}.png}
+\caption{Grid layout}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+\includegraphics[width=\textwidth]{{day5_figs/2.10.32}.png}
+\caption{Spectral layout of graph clusters.}
+\end{subfigure}
+\caption{Visualization of graphs 2.10.31 and 2.10.32}
+\label{fig:visualization}
+\end{center}
+\end{figure}
+\par
+We only used visualization for offline learning. A more complete approach might use human input to visually select important nodes.
+
 
 \section{Algorithms}
 \subsection{Day 1: Cancellation}
@@ -99,9 +173,10 @@ We spent some time trying to visualize the structure of the graphs. Unforunately
 We tried clustering the grpaph using networkx's, ‘k\_components = apxa.k\_components(G)’. For 500-node graphs, the clustering took 129 seconds, which was deemed too long for the 3 minute deadline.
 
 \subsection{Day 3: Monte-Carlo}
-Having failed to beat TA-degree, we increased the scope of our approach. We explored several new measures of centrality, and began exploring blending of results. We included Katz centrality and dispersion centrality, \textbf{which are good for what?} Algorithm \ref{alg:promising} is the pseudocode for this approach.
+Having failed to beat TA-degree, we increased the scope of our approach. We explored several new measures of centrality, and began exploring blending of results. We included Katz centrality and dispersion centrality, \textbf{which are good for what?}
+Each of these centrality measures took only a few seconds, we explored a more complete use of our available time through Monte-Carlo simulations. Algorithm \ref{alg:promising} is the pseudocode for this approach.
 \par
-This is a brutish approach, which does not distinguish between the efficacy of each centrality, nor the complementary advantages of each centrality measure. For ecample, nodes with high betweenness measure are likely prevent cascades from spreading, while nodes with high closeness centrality spread quickly to all nodes in a cluster. Nevertheless, this approach successfully generated several strategies simulated to win against TA-degree. Having not yet beat TA-more, we varied our final output among the top-10 best-performing strategies simulated to beat TA-more. This provides more variance in the seeding, and makes the seeding more robust against an adverserial TA seeding.
+This is a non-disciminative approach, which does not distinguish between the efficacy of each centrality, nor the complementary advantages of each centrality measure. For example, nodes with high betweenness measure are likely prevent cascades from spreading, while nodes with high closeness centrality spread quickly to all nodes in a cluster. Nevertheless, this approach successfully generated several strategies simulated to win against TA-degree. Having not yet beat TA-more, we varied our final output among the top-10 best-performing strategies simulated to beat TA-more. This provides more variance in the seeding, and makes the seeding more robust against an adverserial TA seeding.
 \par
 As simulated, we successfully beat TA-degeree with this approach. However, we still failed to beat TA-more.
 
@@ -159,7 +234,7 @@ On the Day 4 run, we still failed to beat TA-more. Thus, the brute-force generat
 
 
 \subsection{Day 5: Clustering}
-On Day 5, we discovered a faster way of partitioning based on the Louvain method \cite{louvain}, and implemented in networkx. This clustering approach was much quicker than the previous approach using ‘k\_components = apxa.k\_components(G)’. The size of the clusters varied from less than 10 to over 100 and were not disjoint. We adapted previous approaches to clustering, described in Algorithm \ref{alg:cluster}.
+On Day 5, we discovered a faster way of partitioning based on the Louvain method \cite{louvain}, and implemented in networkx. This clustering approach was much quicker than the previous approach using ‘k\_components = apxa.k\_components(G)’. The size of the clusters varied from less than 10 to over 100 for a 500-node graph, and were not disjoint. We adapted previous approaches to clustering, described in Algorithm \ref{alg:cluster}.
 
 
 \begin{algorithm}
@@ -212,13 +287,59 @@ Graph & Strategy & Proportion Nodes Claimed & Games won \\ \hline
 \label{table:day5}
 \end{table}
 
-A visualization \textbf{SHOW VISUALIZATION!} between graphs 2.10.31 and 2.10.32 suggested 2.10.32 was more clearly clustered than 2.10.31, suggesting our approach (1) works well for clustered graphs. This makes sense for clusters of roughly equal size. In retrospect, perhaps we were placing too much weight on small clusters. Rather, perhaps we should have chosen only nodes from the largest cluster.
+
+
+The visualization in Figure \ref{fig:day5} between graphs 2.10.31 and 2.10.32 suggested 2.10.32 was more clearly clustered than 2.10.31, suggesting our approach (1) works well for clustered graphs. This makes sense for clusters of roughly equal size. Nevertheless, we see 2.10.31 has a separate cluster of only 3 nodes, which is likely not worth placing a seed on. In retrospect, perhaps our strategies were placing too much weight on small clusters. Rather, perhaps, we should have chosen only nodes from the largest cluster.
+\begin{figure}[h]
+\begin{center}
+\begin{subfigure}{.49\textwidth}
+\includegraphics[width=\textwidth]{{day5_figs/2.10.31}.png}
+\caption{2.10.31}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+\includegraphics[width=\textwidth]{{day5_figs/2.10.32}.png}
+\caption{2.10.32}
+\end{subfigure}
+\caption{Visualization of graphs 2.10.31 and 2.10.32}
+\label{fig:day5}
+\end{center}
+\end{figure}
+\par
+In Table \ref{table:graphs} in Section \ref{appendix}, we see graph 2.10.32 has high average and overall clustering coefficient, as compared to graph 2.10.30, and also a higher Louvain modularity. This might suggest our approach (1) might only work well for graphs with these properties.
+
 \par
 Under time constraint, we decided to use the number of nodes proportional to the number in each cluster, since this was the only winning approach we discovered. Unfortunately, this failed to beat TA-more.
 
 
 \section{Conclusion}
 
+\pagebreak
+\section{Appendix}\label{appendix}
+\begin{table}[h!]\centering
+\begin{tabular}{c | C{2.0cm} | C{2.0cm} | C{2.5cm} |C{1.7cm}|C{1.7cm}|C{1.7cm}|C{1.9cm}}
+Graph & Average Clustering Coefficient & Overall Clustering Coefficient & Connected Components & Maximal Diameter & Average Diameter & Partitions & 
+Louvain Modularity \\ \hline
+2.10.30 & 0.44 & 0.28 & 2 & 6 & 2.61 & 7.0 & 0.35\\
+2.10.31 & 0.46 & 0.28 & 2 & 7 & 2.65 & 10.0 & 0.34\\
+2.10.32 & 0.51 & 0.36 & 1 & 6 & 2.83 & 8.0 & 0.5\\
+2.10.33 & 0.47 & 0.3 & 1 & 7 & 2.61 & 12.0 & 0.34\\
+2.10.34 & 0.48 & 0.27 & 1 & 7 & 2.83 & 8.0 & 0.47\\ \hline
+
+2.10.20 & 0.42 & 0.29 & 1 & 7 & 2.78 & 9.0 & 0.4\\
+2.10.21 & 0.53 & 0.36 & 2 & 7 & 2.87 & 11.0 & 0.48\\
+2.10.22 & 0.47 & 0.29 & 1 & 7 & 2.58 & 6.0 & 0.38\\
+2.10.23 & 0.47 & 0.3 & 1 & 6 & 2.53 & 6.0 & 0.36\\
+2.10.24 & 0.48 & 0.31 & 1 & 6 & 2.64 & 9.0 & 0.36\\ \hline
+
+2.10.10 & 0.48 & 0.31 & 1 & 6 & 2.55 & 7.0 & 0.4\\
+2.10.11 & 0.51 & 0.32 & 1 & 8 & 2.68 & 8.0 & 0.33\\
+2.10.12 & 0.52 & 0.36 & 1 & 7 & 2.93 & 5.0 & 0.45\\
+2.10.13 & 0.5 & 0.33 & 1 & 6 & 2.95 & 9.0 & 0.49\\
+2.10.14 & 0.5 & 0.32 & 1 & 6 & 2.75 & 9.0 & 0.46\\
+\end{tabular}
+\caption{Submission graph information}
+\label{table:graphs}
+\end{table}
 
 \newpage
 \begin{thebibliography}{9}
@@ -226,6 +347,8 @@ Under time constraint, we decided to use the number of nodes proportional to the
 \bibitem{louvain}
 Fast unfolding of communities in large networks, Vincent D Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Renaud Lefebvre, Journal of Statistical Mechanics: Theory and Experiment 2008(10), P10008 (12pp)
 
+\bibitem{networkx}
+https://networkx.github.io/
 
 \end{thebibliography}
 

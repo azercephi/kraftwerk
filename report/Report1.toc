@@ -1,0 +1,11 @@
+\contentsline {section}{\numberline {1}Introduction and Overview}{1}{section.1}
+\contentsline {subsection}{\numberline {1.1}Counterexample}{1}{subsection.1.1}
+\contentsline {section}{\numberline {2}Visualization}{2}{section.2}
+\contentsline {section}{\numberline {3}Algorithms}{2}{section.3}
+\contentsline {subsection}{\numberline {3.1}Day 1: Cancellation}{2}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Day 2: Centrality Measures}{3}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}Day 3: Monte-Carlo}{4}{subsection.3.3}
+\contentsline {subsection}{\numberline {3.4}Day 4: Blending}{5}{subsection.3.4}
+\contentsline {subsection}{\numberline {3.5}Day 5: Clustering}{5}{subsection.3.5}
+\contentsline {section}{\numberline {4}Conclusion}{7}{section.4}
+\contentsline {section}{\numberline {5}Appendix}{8}{section.5}
