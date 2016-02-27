@@ -30,11 +30,7 @@ def makeGraphFromJSON(filename):
 	return graph
 
 def graphCommunities(filename):
-	"""
-	Partitions and colors graphs into communities w/ best_partition.
-	Displays graph with spring layout (perhaps spectral would be better?) and saves.
-	Unsuccessful attempts made to separate clusters visually.
-	"""
+	
 	# generate graph
 	graph = makeGraphFromJSON(filename)
 	name = filename.split(".json")[0]
@@ -88,9 +84,8 @@ def printStats(filename):
 	graphs's 
 	  - average clustering coefficient
 	  - overall clustering coefficient
-	  - number of connected components
-	  - maximum diameter of largest component
-	  - average diameter of largest component.
+	  - maximum diameter
+	  - average diameter
 	  - number of paritions using community.best_parition
 	  - modularity of community.best_partition
 	'''
@@ -121,7 +116,7 @@ if __name__ == "__main__":
 		print filename
 		printStats(filename)
 		print 
-		graphCommunities(filename)
+		#graphCommunities(filename)
 	
 	
 

@@ -507,16 +507,16 @@ def getClusterSeeds(graph, n):
 		print runtime - time.clock()	
 
 		####################################################################
-		# Strategy: Use eigenvector centrality
-		print 'computing ev centrality'
+		# # Strategy: Use eigenvector centrality
+		# print 'computing ev centrality'
 		
-		ev = nx.eigenvector_centrality(c)
-		ev = sorted(ev.items(),key=itemgetter(1), reverse=True)[0:2*n]
-		ev_nodes = [x[0] for x in ev]	
-		write_seeds(filename+'/clust_ev', ev_nodes[0:n] * 50)	
-		write_strategy(filename+'/clust_ev',  ev_nodes[0:n])
-		cluster_nodes.append(ev_nodes[0:n])
-		####################################################################
+		# ev = nx.eigenvector_centrality(c)
+		# ev = sorted(ev.items(),key=itemgetter(1), reverse=True)[0:2*n]
+		# ev_nodes = [x[0] for x in ev]	
+		# write_seeds(filename+'/clust_ev', ev_nodes[0:n] * 50)	
+		# write_strategy(filename+'/clust_ev',  ev_nodes[0:n])
+		# cluster_nodes.append(ev_nodes[0:n])
+		# ####################################################################
 		
 		####################################################################
 		# Strategy: Use closeness centrality

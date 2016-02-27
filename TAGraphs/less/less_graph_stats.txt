@@ -1,0 +1,45 @@
+2.10.20.json
+Average Clustering Coefficient: 0.418338
+Overall Clustering Coefficient: 0.286548
+# Connected Components: 1
+    Maximal Diameter: 7
+    Average Diameter: 2.775561
+# Paritions: 9
+Louvain Modularity: 0.400632
+
+2.10.21.json
+Average Clustering Coefficient: 0.528813
+Overall Clustering Coefficient: 0.358548
+# Connected Components: 2
+    Maximal Diameter: 7
+    Average Diameter: 2.872899
+# Paritions: 11
+Louvain Modularity: 0.478470
+
+2.10.22.json
+Average Clustering Coefficient: 0.469411
+Overall Clustering Coefficient: 0.289938
+# Connected Components: 1
+    Maximal Diameter: 7
+    Average Diameter: 2.580745
+# Paritions: 6
+Louvain Modularity: 0.378989
+
+2.10.23.json
+Average Clustering Coefficient: 0.471620
+Overall Clustering Coefficient: 0.296418
+# Connected Components: 1
+    Maximal Diameter: 6
+    Average Diameter: 2.531174
+# Paritions: 6
+Louvain Modularity: 0.358326
+
+2.10.24.json
+Average Clustering Coefficient: 0.480388
+Overall Clustering Coefficient: 0.305068
+# Connected Components: 1
+    Maximal Diameter: 6
+    Average Diameter: 2.638353
+# Paritions: 9
+Louvain Modularity: 0.356503
+
