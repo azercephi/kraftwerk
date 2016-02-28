@@ -21,19 +21,23 @@
 \maketitle
 
 
-\textbf{TODO:}
-parallel computations? Jessica's things (spectral clustering?), visualizations. Descriptions of different centralities and why they wold be promising. Intro/Conclusion
-
-
 \section{Introduction and Overview}
 \subsection{Introduction}
-We used networkx \cite{networkx}
-
-\textbf{TODO}
+The goal of pandemaniac is to compete against other teams to infect as many nodes of a given graph as possible. Each graph is undirected and unknown before the game begins. The only influence a team may have on any game is the selection of seed nodes. Teams develop methods to select the most "influencial" seed nodes without overlapping, since nodes selected by more than one team is nullified.
+\\\\
+After seed nodes for both teams are determined, each graph is iterated upon until the coloring converges, or for 100-200 times otherwise. The graph provided for this project all converged, but some, as described in Counterexample (not sure how to cite this) do not. In each iteration, nodes are colored, or recolored, based upon the coloring of itself and its direct neighbors. A colored node contributes 1.5 votes to that color. A neighboring node contributes 1 vote to its color. An uncolored node does not get a vote. If a color wins a strict majority of the votes, then the node is converted. Otherwise, no change is made.
+\\\\
+Our team's efforts were directed towards beating the TA's seed selection algoriths during "regular season." In this report, TA-less refers to the selection of fewer seed nodes than allotted; TA-degree refers to the selection of seed nodes based on highest degree; TA-more refers to the selection of more seed nodes than allotted. The seed selection criteria for TA-less and TA-more is not known. 
+\\\\
+All code was written in Python and utilized various Python packages, such as Networkx, Community, Matplotlib, and JSON. 
+\\
+\cite{networkx} (and whatever else needs to be cited).
 
 \subsection{Counterexample}
-In some cases, a set of initial colorings may result in a game which fails to converge. Consider, for example, the complete bipartite graph, $K_{m,n}$, $m,n \geq 2$ with disjoint nodesets $U, V$ and initial colorings red $R= U$, blue $B=V$. At each timestep, time $t$, the nodes in $A$ will convert the of nodes in $V$. Meanwhile, the nodes in $B$ will convert the nodes in $U$. There are no edges between colored nodes initially, and this property remains through each iteration. So, the colorings will always alternate between the bipartite sets. Figure \ref{fig:converge} shows the behavior of this game, which fails to converge.
-  
+In some cases, a set of initial colorings may result in a game which fails to converge. Consider the complete bipartite graph, $K_{m,n}$, $m,n \geq 2$ with disjoint nodesets $U, V$ and initial colorings red $A=U$, blue $B=V$. Under this inial coloring, the direct neighbors of each node are nodes of the other color. In other words, nodes of the same color are not direclty connected. 
+\\\\
+In the first iteration, $A$-colored nodes will be converted to the color of the nodes in $V$ and $B$-colored nodes will be converted to the color of nodes in $U$. For all following timesteps, the colorings will continue to alternate between the bipartite sets. Figure \ref{fig:converge} shows the behavior of this game, which fails to converge.
+
 \begin{figure}[h!]   
 \begin{center}
 \tikzstyle{every node}=[circle, draw, fill=black, minimum width=10pt]
@@ -71,31 +75,33 @@ In some cases, a set of initial colorings may result in a game which fails to co
 \end{figure}
 
 \section{Visualization}
-Visualization was an important component of this project, especially for understanding how seed node selection propogated through the graph. We explored several built-in and custom visualizations through the networkx package. One critertion for visualization was maintaining a consistent A circular layout was not instructive and nodes were too close together. We implemented a custom grid layout, as in Figure \ref{fig:visualization}. The grid layout failed to capture the structure of the graph, but was useful for viewing the progress of cascades.
-\par
-To visualize the structure of the graph at a single timepoint, we used networkx's `spectral layout', which uses Hooke's law with force proportional to node degree to place nodes. Figure \ref{fig:visualization} shows a coloring of graph clusters, which is useful for understanding general graph structure.
+Visualization was an important component of this project, useful for better understanding the graph's structure and how color propagated from selected seed nodes. We explored several built-in and custom visualizations provided in Networkx. 
+\\\\
+We attempted to visualize the clustering/community structure of the graph, using NetworkX's visualization and Community's built-in partition functions. Nodes were sorted and colored based on community. The graph was then displayed using Networkx's `spring layout', which uses Fruchterman-Reingold force-directed algorithm. Nodes modeled as having repulsive forces and edges are modeled as spring. A balance of these forces allows the graph to be laid out with as few overlapping edges as possible. Figure \ref{fig:visualization} shows a coloring of graph clusters. Clusters are distinguishable, though not clearly separatable. 
+\\\\
+To see color propagation, we generated our own visualizer, in place of the non-functioning one. One criterion for visualizing color progression was maintaining a consistent graph between iterations. A circular layout was not instructive because nodes were too close together. We implemented a custom grid layout, as in Figure \ref{fig:visualization} where each node is labeled with its degree. The grid layout failed to visually capture the structure of the graph, but was useful for viewing the progress of color cascades. We may reasonable indentify clusters based on on the color propagations.
+\\\\
+We only used visualization for offline learning. A more complete approach would be to human input to select seed nodes by "eyeballing" important nodes in clusters. However, we did not consider our visualization displayed graph structure well enough to implement this approach.
 
 \begin{figure}[h]
 \begin{center}
 \begin{subfigure}{.49\textwidth}
+\includegraphics[width=\textwidth]{{day5_figs/2.10.32}.png}
+\caption{Spring layout of graph clusters.}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
 \includegraphics[width=\textwidth]{{day1_figs/2.10.10.json_iter_1}.png}
 \caption{Grid layout}
 \end{subfigure}
-\begin{subfigure}{.49\textwidth}
-\includegraphics[width=\textwidth]{{day5_figs/2.10.32}.png}
-\caption{Spectral layout of graph clusters.}
-\end{subfigure}
-\caption{Visualization of graphs 2.10.31 and 2.10.32}
+\caption{Visualization of graphs 2.10.32 and 2.10.31}
 \label{fig:visualization}
 \end{center}
 \end{figure}
-\par
-We only used visualization for offline learning. A more complete approach might use human input to visually select important nodes.
 
 
 \section{Algorithms}
 \subsection{Day 1: Cancellation}
-The first approach was a naive cancellation approach designed to beat TA-degree. Algorithm \ref{alg:cancellation} gives the pseudocode for the cancellation approach.
+The first approach was a naive cancellation approach designed to beat TA-degree. Knowing exactly how seed nodes were selected, we sought to negate all but the lowest-degree seed node and conquer the highest degree node. Algorithm \ref{alg:cancellation} gives the pseudocode for the cancellation approach.
 \begin{algorithm}
 \caption{Cancellation Algorithm}
 \label{Cancellation}
@@ -109,7 +115,7 @@ The first approach was a naive cancellation approach designed to beat TA-degree.
 \end{algorithmic}
 \label{alg:cancellation}
 \end{algorithm} \\
-Time constraints prevented us from testing this strategy before the Day 1 run. We visualized the results from the Day 1 run against TA-degree, and visualized each iteration in Figure \ref{fig:cancellation}.
+Time constraints prevented us from testing this strategy before the Day 1 run. We retrospectively visualized the results from the Day 1 run against TA-degree, shown in Figure \ref{fig:cancellation}.
 
 \begin{figure}[h!]
 \begin{center}
@@ -121,12 +127,13 @@ Time constraints prevented us from testing this strategy before the Day 1 run. W
 \label{fig:cancellation}
 \end{center}
 \end{figure}
-The top-left plot is iteration 1, where we notice only one node of each color is selected, by construction. The top right right is iteration 2, where we see the red node adjacent to the bottom-left corner, with degree 139. So our strategy successsfully claimed the highest-degree node. However, the TA's blue seed node has high degree, and claimed several blue nodes. Then, at iteration 3, we see the highest-degree node failed to convert many nodes. The TA already has spread to enough nodes that converting any new nodes is difficult. By iteration 4, it is clear the blue nodes have won. Thus, our cancellation approach is too slow; the controlling the highest-degree node at iteration 2 is not enough to win against TA-degree.
-\par
-As simulated, we did not beat TA-degree on day 1. We did, however, beat TA-fewer. This is not unexpected, since the $n-1$ nodes with high degree centrality are a decent selection of important nodes.
+
+\noindent The top-left plot is Iteration 1, where we notice only one node of each color is selected, by construction. This implies all other nodes were negated. The top right plot shows Iteration 2, in which that we claimed the highest degree node in this graph, the red node adjacent to the bottom-left corner with degree 139. However, the TA's blue seed node had a higher degree than our seed node and claimed several blue nodes. In Iteration 3, we see the highest-degree node failed to convert many nodes. The TA already has spread to enough nodes that converting any new nodes is difficult. By Iteration 4, it is clear the blue nodes have won. Thus, our cancellation approach moves too slowly. Controlling the highest-degree node at iteration 2 is not enough to win against TA-degree.
+\\\\
+As simulated, we did not beat TA-degree on Day 1. We did, however, beat TA-fewer. Though not our intention, this was not unexpected, since the set of $n-1$ nodes with high degree centrality is a decent selection that conquers rapidly.
 
 \subsection{Day 2: Centrality Measures}
-On day 2, we focused on developing a strategy to beat TA-degree. We explored several different measures of centrality, including betweeness, current flow betweenness (cfbet), closeness, and eigenvector centrality. First we tried taking top $n$ most-important nodes, as ranked by each centrality measure, excluding degree-centrality since TA-degree uses degree centrality. We modified `sim.py' to simulate each selction strategy against TA-degree. Table \ref{table:day2} shows the results of our simulations
+On Day 2, we focused on developing a different strategy to beat TA-degree. We explored the several centrality measures built into NetworkX, including betweeness, current flow betweenness (cfbet), closeness, and eigenvector centrality. First we tried taking top $n$ most-important nodes for each centrality measure ranking. We excluded degree-centrality since TA-degree uses degree centrality. We modified `sim.py' to simulate each selction strategy against TA-degree. Table \ref{table:day2} shows the results of our simulations
 
 \begin{table}\centering
 \begin{tabular}{cccccc}
@@ -163,21 +170,24 @@ Day & Graph & Centrality measure & Strategy count & TA-degree count & Ratio \\ \
 \label{table:day2}
 \end{table}
 
-
-From the Day 1 simulations, we see closeness and eigenvector centrality consistently outperformed TA-degree. For our submission, we set up a local pipeline to generate seeds for current flow betweeness, closeness, and eigenvector centralities, and simulate TA-degree against each centrality measure. We expeceted at least one of the three strategies to beat TA-degree on graph 2.10.11, based on the performances on graphs 2.10.10, 2.10.20, 2.10.30.
-\par
+This new method was tested on Day 1's TA-degree graph. We see closeness and eigenvector centrality consistently outperformed TA-degree. For our submission, we set up a local pipeline to generate seeds for current flow betweeness, closeness, and eigenvector centralities, and simulate TA-degree against each centrality measure. We expeceted at least one of the three strategies to beat TA-degree on graph 2.10.11, based on the performances on graphs 2.10.10, 2.10.20, 2.10.30.
+\\\\
 Unfortunately, during submission, we simulated narrow losses against TA-degree with closeness and eigevector centralities, with a heavy loss with current-flow betweenness. The simulation was correct, as we failed to beat TA-degree.
-\par
-We spent some time trying to visualize the structure of the graphs. Unforunately, the visualizations produced by networkx's 'spring layout' were inconsistent between successive drawings, and the remaining visualization formats did not expose the structure of the graph. Thus, we used visualization only sparingly from this point forward.
-\par
-We tried clustering the grpaph using networkx's, ‘k\_components = apxa.k\_components(G)’. For 500-node graphs, the clustering took 129 seconds, which was deemed too long for the 3 minute deadline.
+\\\\
+We spent some time trying to visualize the structure of the graphs. Unforunately, the visualizations produced by NetworkX's 'spring layout' were inconsistent between successive drawings, and the remaining visualization formats did not expose the structure of the graph.
+\\\\
+We tried clustering the graph using NetworkX's, ‘k\_components = apxa.k\_components(G)’. For 500-node graphs, the clustering took 129 seconds, which was deemed too long for the 3 minute deadline.
 
 \subsection{Day 3: Monte-Carlo}
-Having failed to beat TA-degree, we increased the scope of our approach. We explored several new measures of centrality, and began exploring blending of results. We included Katz centrality and dispersion centrality, \textbf{which are good for what?}
-Each of these centrality measures took only a few seconds, we explored a more complete use of our available time through Monte-Carlo simulations. Algorithm \ref{alg:promising} is the pseudocode for this approach.
-\par
-This is a non-disciminative approach, which does not distinguish between the efficacy of each centrality, nor the complementary advantages of each centrality measure. For example, nodes with high betweenness measure are likely prevent cascades from spreading, while nodes with high closeness centrality spread quickly to all nodes in a cluster. Nevertheless, this approach successfully generated several strategies simulated to win against TA-degree. Having not yet beat TA-more, we varied our final output among the top-10 best-performing strategies simulated to beat TA-more. This provides more variance in the seeding, and makes the seeding more robust against an adverserial TA seeding.
-\par
+Having failed to beat TA-degree, we increased the scope of our approach. We explored several more unfamiliar measures of centrality, and began used multiple centrality measures for selecting a set of seeds. We included Katz centrality and dispersion centrality.
+Katz centrality solves a system of linear equations for the centrality of a node relative to that of its neighbors.\cite{networkx}.
+Dispersion centrality measures how close are mutual friends between pairs of nodes in the graph. \cite{networkx} % could also cite http://arxiv.org/pdf/1310.6753v1.pdf
+In some sense, it is another measure of "betweenness".
+\\\\
+Because each of these centrality measures took only a few seconds, we were able to use our time more completely through Monte-Carlo simulations. Algorithm \ref{alg:promising} is the pseudocode for this approach.
+\\\\
+This was a non-disciminative approach, which does not distinguish between the efficacy of each centrality, nor the complementary advantages of each centrality measure. For example, nodes with high betweenness measure are likely prevent cascades from spreading, while nodes with high closeness centrality spread quickly to all nodes in a cluster. Nevertheless, this approach successfully generated several strategies simulated to win against TA-degree. Having not yet beat TA-more, we varied our final output among the top-10 best-performing strategies simulated to beat TA-more. This provides more variance in the seeding, and makes the seeding more robust against an adverserial TA seeding.
+\\\\
 As simulated, we successfully beat TA-degeree with this approach. However, we still failed to beat TA-more.
 
 \begin{algorithm}
@@ -208,8 +218,7 @@ As simulated, we successfully beat TA-degeree with this approach. However, we st
 \end{algorithm}
 
 \subsection{Day 4: Blending}
-We expanded on our idea of blending promising nodes into a more refined approach. We took the $n$ most promising nodes based on degree centrality, betweenness and eigenvector centrality. We reasoned that nodes with high degree centrality would effectively conquer clusters, while nodes with high betweeness would effectively blockade cascasdes from proceeding between clusters. Up to this point, eigenvector centrality performed quite well and was computed very rapidly, so we decided to include the nodes with high eigenvector centrality as well.
-
+The remainder of regular season was focused on beating TA-more. We refined our idea of blending promising nodes. We took the $n$ most promising nodes based on degree centrality, betweenness and eigenvector centrality. We reasoned that nodes with high degree centrality would effectively conquer clusters, while nodes with high betweeness would effectively blockade cascasdes from proceeding between clusters. Up to this point, eigenvector centrality performed quite well and was computed very rapidly, so we decided to include the nodes with high eigenvector centrality as well.
 
 \begin{algorithm}
 \caption{Hybrid Algorithm}
@@ -227,14 +236,12 @@ We expanded on our idea of blending promising nodes into a more refined approach
 \label{alg:hybrid}
 \end{algorithm}
 
-\textbf{LOCAL RESULTS!?}
+\textbf{LOCAL RESULTS!?} ? I don't understand what you mean?
 
 On the Day 4 run, we still failed to beat TA-more. Thus, the brute-force generation of `important' nodes failed to quickly cover enough variation in seed nodes to beat TA-more
 
-
-
 \subsection{Day 5: Clustering}
-On Day 5, we discovered a faster way of partitioning based on the Louvain method \cite{louvain}, and implemented in networkx. This clustering approach was much quicker than the previous approach using ‘k\_components = apxa.k\_components(G)’. The size of the clusters varied from less than 10 to over 100 for a 500-node graph, and were not disjoint. We adapted previous approaches to clustering, described in Algorithm \ref{alg:cluster}.
+On Day 5, we tried using the Louvain method \cite{louvain} based function provided in the Community package to partition the graph. This approach was much faster than than the previous approach using ‘k\_components = apxa.k\_components(G)’. The size of the clusters varied from less than 10 to over 100 for a 500-node graph, and were not disjoint. We adapted previous approaches to clustering, described in Algorithm \ref{alg:cluster}.
 
 
 \begin{algorithm}
@@ -260,14 +267,14 @@ On Day 5, we discovered a faster way of partitioning based on the Louvain method
 \label{alg:cluster}
 \end{algorithm}
 
-In line 8, we explored three methods of choosing the number of most-important node(s) selected. For a given cluster $c$, we populate FinalSeeding with the number of nodes proportional to one of:
+\noindent For each cluster, we explored three methods of choosing the number of most-important node(s) selected. For a given cluster $c$, we populated FinalSeeding with the number of nodes proportional to one of:
 \begin{enumerate}[label=(\arabic*)]
 \item the total degree of nodes in $c$
 \item the number of edges in $c$
 \item 1 (each cluster has the same number of nodes)
 \end{enumerate}
 
-We simulated the results against the nodes picked by TA-more on previous days. Our findings are summarized in Table \ref{table:day5}.
+We simulated the results against the nodes picked by TA-more on previous days. \textbf{did we not test it on 2.10.30?} Our findings are summarized in Table \ref{table:day5}.
 \begin{table}[h!]\centering
 \begin{tabular}{ccccc}
 Graph & Strategy & Proportion Nodes Claimed & Games won \\ \hline
@@ -287,9 +294,10 @@ Graph & Strategy & Proportion Nodes Claimed & Games won \\ \hline
 \label{table:day5}
 \end{table}
 
-
-
+\noindent We were able to win on graph 2.10.32, but did very poorly on graph 2.10.31. We visualized and investigated the structure of the graphs to determined why this discrepency occurred.
+\\\\
 The visualization in Figure \ref{fig:day5} between graphs 2.10.31 and 2.10.32 suggested 2.10.32 was more clearly clustered than 2.10.31, suggesting our approach (1) works well for clustered graphs. This makes sense for clusters of roughly equal size. Nevertheless, we see 2.10.31 has a separate cluster of only 3 nodes, which is likely not worth placing a seed on. In retrospect, perhaps our strategies were placing too much weight on small clusters. Rather, perhaps, we should have chosen only nodes from the largest cluster.
+
 \begin{figure}[h]
 \begin{center}
 \begin{subfigure}{.49\textwidth}
@@ -305,13 +313,19 @@ The visualization in Figure \ref{fig:day5} between graphs 2.10.31 and 2.10.32 su
 \end{center}
 \end{figure}
 \par
-In Table \ref{table:graphs} in Section \ref{appendix}, we see graph 2.10.32 has high average and overall clustering coefficient, as compared to graph 2.10.30, and also a higher Louvain modularity. This might suggest our approach (1) might only work well for graphs with these properties.
 
-\par
+\noindent In Table \ref{table:graphs} in Section \ref{appendix}, we see graph 2.10.32 has higher average and overall clustering coefficient, compared to graph 2.10.30, supporting the hypothesis that 2.10.32 is better clustered. 2.10.32 also a higher Louvain modularity, which means the Louvain method of clustering would produce better partitions on this graph. These results might suggest our approach (1) might only work well for graphs with these properties.
+\\\\
 Under time constraint, we decided to use the number of nodes proportional to the number in each cluster, since this was the only winning approach we discovered. Unfortunately, this failed to beat TA-more.
 
-
 \section{Conclusion}
+
+We explored various methods of selecting seed nodes and successfully beat TA-fewer and TA-degree. We did not manage to beat TA-more during regular season. Due to other commitments and time constraints, we did not actively participate in the tournament.
+\\\\
+We learned about other measures of centrality and exploring different combinations of centrality measures to "cover up" weaknesses. We learned to implement various Python packages associated with analyzing graphs and the runtime differences between functions. Our rudimentary implementation did not show clusters well, but did allow us to get a sense of spread of each color and graph structure.
+\\
+\\
+\textbf{other things we learned/got out of project/were supposed to have gotten out of this project} 
 
 \pagebreak
 \section{Appendix}\label{appendix}
