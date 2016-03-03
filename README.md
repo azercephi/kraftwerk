@@ -10,4 +10,4 @@ where [generatePics] will generate pictures in 'figs' folder if True.
 For example, we can call:
 clear; python sim.py 2.10.json strategy/2.10.10.json.seeds.top_beatdeg strategy/2.10.10.json.seeds.unweighted_top_deg True
 
-
+Final report for this mini-project is found in the 'report' folder.
